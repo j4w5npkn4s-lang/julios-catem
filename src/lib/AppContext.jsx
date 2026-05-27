@@ -46,22 +46,26 @@ export function AppProvider({ children }) {
 
   // ── LOAD DATA ──
   const loadAll = useCallback(async () => {
-    const [v, e, c, p, m, u, cfg] = await Promise.all([
-      supabase.from('viajes').select('*').order('created_at', { ascending: false }),
-      supabase.from('estimaciones').select('*').order('year', { ascending: false }),
-      supabase.from('conciliaciones').select('*, conciliacion_viajes(viaje_id)').order('created_at', { ascending: false }),
-      supabase.from('pagos_camionero').select('*').order('created_at', { ascending: false }),
-      supabase.from('minas').select('*').order('nombre'),
-      supabase.from('usuarios').select('id,nombre,email,rol,sede,color,activo,created_at'),
-      supabase.from('configuracion').select('*').single(),
-    ])
-    if (v.data)   setViajes(v.data)
-    if (e.data)   setEstimaciones(e.data)
-    if (c.data)   setConciliaciones(c.data)
-    if (p.data)   setPagos(p.data)
-    if (m.data)   setMinas(m.data)
-    if (u.data)   setUsuarios(u.data)
-    if (cfg.data) setConfig(cfg.data)
+    try {
+      const [v, e, co, p, m, u, cfg] = await Promise.all([
+        supabase.from('viajes').select('*').order('created_at', { ascending: false }),
+        supabase.from('estimaciones').select('*').order('year', { ascending: false }),
+        supabase.from('conciliaciones').select('*, conciliacion_viajes(viaje_id)').order('created_at', { ascending: false }),
+        supabase.from('pagos_camionero').select('*').order('created_at', { ascending: false }),
+        supabase.from('minas').select('*').order('nombre'),
+        supabase.from('usuarios').select('id,nombre,email,rol,sede,color,activo,created_at'),
+        supabase.from('configuracion').select('*').single(),
+      ])
+      if (v.data)   setViajes(v.data)
+      if (e.data)   setEstimaciones(e.data)
+      if (co.data)  setConciliaciones(co.data)
+      if (p.data)   setPagos(p.data)
+      if (m.data)   setMinas(m.data)
+      if (u.data)   setUsuarios(u.data)
+      if (cfg.data) setConfig(cfg.data)
+    } catch (err) {
+      console.error('Error loading data:', err)
+    }
   }, [])
 
   // ── REALTIME ──

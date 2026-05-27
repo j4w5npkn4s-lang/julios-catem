@@ -167,13 +167,27 @@ export default function ModalTicket({ onClose, onSaved }) {
           </button>
         </>}>
 
+        {/* TIPO — botones grandes igual que en flotilla */}
+        <div className="tipo-sel">
+          <div className={`tipo-btn${tipo==='sencillo'?' sel':''}`} onClick={() => { setTipo('sencillo'); setCamionId(''); setTracto(''); setG1(''); setG2(''); setM1(''); setM2(''); setAgNombre(''); setAgId('') }}>
+            <i className="ti ti-truck" style={{ fontSize: 28, display: 'block', marginBottom: 8 }} />
+            <div style={{ fontSize: 14, fontWeight: 700 }}>Sencillo</div>
+            <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 3 }}>1 tracto · 1 gondola · 1 folio</div>
+          </div>
+          <div className={`tipo-btn${tipo==='full'?' sel':''}`} onClick={() => { setTipo('full'); setCamionId(''); setTracto(''); setG1(''); setG2(''); setM1(''); setM2(''); setAgNombre(''); setAgId('') }}>
+            <i className="ti ti-truck" style={{ fontSize: 28, display: 'block', marginBottom: 8 }} />
+            <div style={{ fontSize: 14, fontWeight: 700 }}>Full</div>
+            <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 3 }}>1 tracto · 2 gondolas · 2 folios</div>
+          </div>
+        </div>
+
         {/* CAMIÓN (autofill) */}
         <div className="sdv">Seleccionar camión</div>
         <div className="fg">
           <label>Camión de la flotilla</label>
           <select value={camionId} onChange={e => handleCamionChange(e.target.value)}>
-            <option value="">— Selecciona el camión —</option>
-            {flotillaActiva.map(f => {
+            <option value="">— Selecciona el camión ({tipo.toUpperCase()}) —</option>
+            {flotillaActiva.filter(f => f.tipo === tipo).map(f => {
               const ag = agremiados.find(a => a.id === f.agremiado_id)
               return (
                 <option key={f.id} value={f.id}>

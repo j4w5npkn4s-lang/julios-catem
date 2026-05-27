@@ -20,10 +20,21 @@ export function ViewPagos() {
 
 
   // Viajes filtrados
-  const SIN_PAGAR = ['abierto','pendiente_conciliar','en_conciliacion','pendiente_pago']
   const vsFiltrados = viajes.filter(v => {
-    if (fEstado === 'sin_pagar' && !SIN_PAGAR.includes(v.estado)) return false
-    if (fEstado && fEstado !== 'sin_pagar' && v.estado !== fEstado) return false
+    if (fEstado === 'sin_pagar') {
+      // Sin pagar = no tienen registro de pago (pagado !== true)
+      if (v.pagado === true) return false
+    } else if (fEstado === 'abierto') {
+      if (v.estado !== 'abierto') return false
+    } else if (fEstado === 'pendiente_pago') {
+      if (v.estado !== 'pendiente_pago') return false
+    } else if (fEstado === 'cerrado_sin_pagar') {
+      if (v.estado !== 'cerrado' || v.pagado === true) return false
+    } else if (fEstado === 'pagados') {
+      if (v.pagado !== true) return false
+    } else if (fEstado) {
+      if (v.estado !== fEstado) return false
+    }
     if (fAgremiado && v.agremiado_id !== fAgremiado) return false
     return true
   })
@@ -68,9 +79,10 @@ export function ViewPagos() {
         <select value={fEstado} onChange={e => { setFEstado(e.target.value); setSelec(new Set()) }}
           style={{ height:32, fontSize:11, padding:'0 8px', background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:7, color:'var(--text)', minWidth:160 }}>
           <option value="sin_pagar">Sin pagar (todos)</option>
-          <option value="abierto">Abiertos (adelanto)</option>
+          <option value="cerrado_sin_pagar">⚠️ Cerrados sin pagar</option>
+          <option value="abierto">Adelantos (viajes abiertos)</option>
           <option value="pendiente_pago">Pendientes de pago</option>
-          <option value="cerrado">Pagados / Cerrados</option>
+          <option value="pagados">✓ Pagados</option>
           <option value="">Todos</option>
         </select>
         <span style={{ fontSize:11, color:'var(--muted)' }}>{vsFiltrados.length} viaje(s)</span>
@@ -118,7 +130,16 @@ export function ViewPagos() {
                       <span className={`pill ${v.foto_tracto?'pg':'pr'}`} style={{fontSize:8,marginRight:2}}>Tracto</span>
                       <span className={`pill ${v.foto_ticket_llegada?'pg':'pr'}`} style={{fontSize:8}}>T.Lle</span>
                     </td>
-                    <td><span className={`pill ${v.estado==='cerrado'?'pg':v.estado==='pendiente_pago'?'pp':'pa'}`} style={{fontSize:9}}>{v.estado==='cerrado'?'Pagado':v.estado==='pendiente_pago'?'Pend. pago':'Pend. conciliar'}</span></td>
+                    <td>
+                      {v.pagado === true
+                        ? <span className="pill pg" style={{fontSize:9}}>✓ Pagado</span>
+                        : v.estado === 'cerrado'
+                          ? <span className="pill pr" style={{fontSize:9}}>⚠ Cerrado sin pagar</span>
+                          : v.estado === 'pendiente_pago'
+                            ? <span className="pill pp" style={{fontSize:9}}>Pend. pago</span>
+                            : <span className="pill pa" style={{fontSize:9}}>{v.estado==='abierto'?'Adelanto posible':'Pend. conciliar'}</span>
+                      }
+                    </td>
                   </tr>
                 )
               }) : (

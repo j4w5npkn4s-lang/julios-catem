@@ -147,11 +147,13 @@ export function AppProvider({ children }) {
     if (error) throw error
     for (const id of viajeIds) {
       const v = viajes.find(x => x.id === id)
-      // Solo cerrar si ya estaba pendiente_pago. Si está abierto es adelanto, mantener estado
+      // Marcar como pagado independientemente del estado de conciliación
       if (v && v.estado === 'pendiente_pago') {
-        await updateViaje(id, { estado: 'cerrado' })
+        await updateViaje(id, { estado: 'cerrado', pagado: true })
+      } else {
+        // Adelanto o viaje ya cerrado por conciliación — solo marcar pagado
+        await updateViaje(id, { pagado: true })
       }
-      // Si está abierto o pendiente_conciliar = adelanto, no cambiar estado
     }
   }
 

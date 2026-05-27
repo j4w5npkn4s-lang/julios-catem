@@ -6,33 +6,116 @@ import Modal from '../components/Modal'
 
 // ══ PAGOS ══
 export function ViewPagos() {
-  const { pagos, viajes, fmt } = useApp()
+  const { viajes, agremiados, pagos, vPago, vM3, fmt, perm } = useApp()
+  const toast = useToast()
+  const [fAgremiado, setFAgremiado] = useState('')
+  const [fEstado, setFEstado]       = useState('pendiente_pago')
+  const [selec, setSelec]           = useState(new Set())
+  const [pagoVs, setPagoVs]         = useState(null)
+  const p = perm()
+
+  const ModalPago = require('../components/ModalPago').default
+
+  // Viajes filtrados
+  const vsFiltrados = viajes.filter(v => {
+    if (fEstado && v.estado !== fEstado) return false
+    if (fAgremiado && v.agremiado_id !== fAgremiado) return false
+    return true
+  })
+
+  function toggleSelec(id) {
+    const s = new Set(selec)
+    s.has(id) ? s.delete(id) : s.add(id)
+    setSelec(s)
+  }
+  function toggleAll() {
+    setSelec(selec.size === vsFiltrados.length ? new Set() : new Set(vsFiltrados.map(v=>v.id)))
+  }
+
+  const selecViajes = vsFiltrados.filter(v => selec.has(v.id))
+  const totalPago   = selecViajes.reduce((a,v) => a + vPago(v), 0)
+
+  // Fotos status
+  const fotosBadge = v => {
+    const ok  = [v.foto_ticket_salida, v.foto_tracto, v.foto_ticket_llegada].filter(Boolean).length
+    const tot = 3
+    return { ok, tot, completo: ok === tot }
+  }
+
+  const getNombreAgremiado = id => agremiados.find(a=>a.id===id)?.nombre || '—'
+
   return (
     <div>
+      {/* Filtros */}
+      <div style={{ display:'flex', gap:8, marginBottom:12, flexWrap:'wrap', alignItems:'center' }}>
+        <select value={fAgremiado} onChange={e => { setFAgremiado(e.target.value); setSelec(new Set()) }}
+          style={{ height:32, fontSize:11, padding:'0 8px', background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:7, color:'var(--text)', minWidth:160 }}>
+          <option value="">Todos los agremiados</option>
+          {agremiados.filter(a=>a.activo!==false).map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+        </select>
+        <select value={fEstado} onChange={e => { setFEstado(e.target.value); setSelec(new Set()) }}
+          style={{ height:32, fontSize:11, padding:'0 8px', background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:7, color:'var(--text)', minWidth:160 }}>
+          <option value="pendiente_pago">Pendientes de pago</option>
+          <option value="cerrado">Pagados / Cerrados</option>
+          <option value="">Todos</option>
+        </select>
+        <span style={{ fontSize:11, color:'var(--muted)' }}>{vsFiltrados.length} viaje(s)</span>
+        <div style={{ flex:1 }} />
+        {selec.size > 0 && p.canPagar && (
+          <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+            <span style={{ fontSize:11, color:'var(--muted)' }}>
+              {selec.size} selec. · <span style={{ color:'var(--pago)', fontFamily:"'Space Mono',monospace" }}>{fmt(totalPago)}</span>
+            </span>
+            <button className="btn btn-ok btn-sm" onClick={() => setPagoVs(selecViajes)}>
+              <i className="ti ti-cash" />Pagar seleccionados
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Tabla */}
       <div className="tc">
-        <div className="tc-h"><span className="tc-t">Registro de pagos a camioneros</span></div>
         <div className="tw">
           <table>
-            <thead><tr><th>FECHA</th><th>BOLETA(S)</th><th>OPERADOR</th><th>TIPO</th><th>MONTO</th><th>FOLIO</th><th>COMPROBANTE</th></tr></thead>
+            <thead>
+              <tr>
+                <th><input type="checkbox" checked={selec.size===vsFiltrados.length&&vsFiltrados.length>0} onChange={toggleAll} style={{accentColor:'var(--acc)'}} /></th>
+                <th>TICKET</th><th>AGREMIADO</th><th>TRACTO</th><th>TIPO</th>
+                <th>OPERADOR</th><th>FECHA SAL.</th><th>M³</th><th>A PAGAR</th>
+                <th>FOTOS</th><th>ESTADO</th>
+              </tr>
+            </thead>
             <tbody>
-              {pagos.length ? pagos.map(p => {
-                const v = viajes.find(x => x.id === p.viaje_id)
+              {vsFiltrados.length ? vsFiltrados.map(v => {
+                const fb = fotosBadge(v)
                 return (
-                  <tr key={p.id}>
-                    <td>{p.fecha}</td>
-                    <td className="mono" style={{ color: 'var(--acc)' }}>{p.viaje_id}</td>
-                    <td style={{ fontSize: 10 }}>{v?.operador || '—'}</td>
-                    <td>{p.masivo ? <span className="pill pp">Masivo</span> : `Parte ${p.parte}`}</td>
-                    <td className="mono" style={{ color: 'var(--pago)' }}>{fmt(p.monto)}</td>
-                    <td style={{ fontSize: 10, color: 'var(--muted)' }}>{p.folio || '—'}</td>
-                    <td>{p.comprobante_url ? <a href={p.comprobante_url} target="_blank" className="pill pg" style={{ cursor: 'pointer' }}>✓ Ver</a> : <span className="pill pr">Sin archivo</span>}</td>
+                  <tr key={v.id} className="tr">
+                    <td><input type="checkbox" checked={selec.has(v.id)} onChange={() => toggleSelec(v.id)} style={{accentColor:'var(--acc)'}} /></td>
+                    <td><span className="mono" style={{ color:'var(--acc)' }}>{v.id}</span></td>
+                    <td style={{ fontSize:10 }}>{getNombreAgremiado(v.agremiado_id)}</td>
+                    <td><b>{v.tracto}</b></td>
+                    <td><span className={`pill ${v.tipo==='full'?'pp':'pgr'}`}>{v.tipo?.toUpperCase()}</span></td>
+                    <td style={{ fontSize:10 }}>{v.operador}</td>
+                    <td style={{ fontSize:10 }}>{v.fecha_salida||'—'}</td>
+                    <td className="mono">{vM3(v)}</td>
+                    <td className="mono" style={{ color:'var(--pago)' }}>{fmt(vPago(v))}</td>
+                    <td>
+                      <span className={`pill ${v.foto_ticket_salida?'pg':'pr'}`} style={{fontSize:8,marginRight:2}}>T.Sal</span>
+                      <span className={`pill ${v.foto_tracto?'pg':'pr'}`} style={{fontSize:8,marginRight:2}}>Tracto</span>
+                      <span className={`pill ${v.foto_ticket_llegada?'pg':'pr'}`} style={{fontSize:8}}>T.Lle</span>
+                    </td>
+                    <td><span className={`pill ${v.estado==='cerrado'?'pg':v.estado==='pendiente_pago'?'pp':'pa'}`} style={{fontSize:9}}>{v.estado==='cerrado'?'Pagado':v.estado==='pendiente_pago'?'Pend. pago':'Pend. conciliar'}</span></td>
                   </tr>
                 )
-              }) : <tr><td colSpan={7} style={{ textAlign: 'center', padding: 24, color: 'var(--muted)' }}>Sin pagos registrados</td></tr>}
+              }) : (
+                <tr><td colSpan={11} style={{textAlign:'center',padding:24,color:'var(--muted)'}}>Sin viajes con ese filtro</td></tr>
+              )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {pagoVs && <ModalPago viajes={pagoVs} onClose={() => { setPagoVs(null); setSelec(new Set()) }} onSaved={() => { setPagoVs(null); setSelec(new Set()) }} />}
     </div>
   )
 }
@@ -127,14 +210,12 @@ export function ViewReportes() {
 
 // ══ CONFIG ══
 export function ViewConfig() {
-  const { config, saveConfig, minas, addMina, updateMina, destinos, addDestino, updateDestino, deleteDestino, uploadFoto } = useApp()
+  const { config, saveConfig, destinos, addDestino, updateDestino, deleteDestino, uploadFoto } = useApp()
   const toast = useToast()
   const [cobro, setCobro] = useState(config.tarifa_cobro || '')
   const [pago, setPago]   = useState(config.tarifa_pago || '')
   const [emp, setEmp]       = useState(config.empresa || '')
   const [obra, setObra]     = useState(config.obra || '')
-  const [nuevaMina, setNM]  = useState('')
-  const [nuevaKm, setNK]    = useState('')
   const [saving, setSaving] = useState(false)
   const [logoFile, setLogoFile] = useState(null)
   const [logoPreview, setLogoPreview] = useState(config.logo_url || null)
@@ -169,15 +250,6 @@ export function ViewConfig() {
       toast('Empresa y logo guardados ✓', 'ok')
     } catch (err) { toast(err.message, 'err') }
     setUploadingLogo(false)
-  }
-
-  async function handleAddMina() {
-    if (!nuevaMina.trim()) return
-    try {
-      await addMina({ nombre: nuevaMina.trim().toUpperCase(), km_default: parseFloat(nuevaKm)||0 })
-      setNM(''); setNK('')
-      toast('Mina agregada', 'ok')
-    } catch (err) { toast(err.message, 'err') }
   }
 
   const sim = { m3_1: 30, m3_2: 0, km: 384 }
@@ -244,26 +316,7 @@ export function ViewConfig() {
           </button>
         </div>
 
-        {/* MINAS */}
-        <div className="tc" style={{ padding: 15 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 11, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <i className="ti ti-map-pin" style={{ color: 'var(--acc)' }} />Minas / Destinos
-          </div>
-          {minas.map(m => (
-            <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid var(--border)', fontSize: 11 }}>
-              <span style={{ flex: 1 }}>{m.nombre}</span>
-              <input type="number" defaultValue={m.km_default} placeholder="KM"
-                style={{ width: 70, padding: '3px 6px', fontSize: 10, background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 5, color: 'var(--text)' }}
-                onBlur={e => updateMina(m.id, { km_default: parseFloat(e.target.value)||0 })} />
-              <span style={{ fontSize: 10, color: 'var(--muted)' }}>km</span>
-            </div>
-          ))}
-          <div style={{ display: 'flex', gap: 7, marginTop: 10, flexWrap: 'wrap' }}>
-            <input value={nuevaMina} onChange={e => setNM(e.target.value)} placeholder="Nombre de la mina..." style={{ flex: 1 }} />
-            <input type="number" value={nuevaKm} onChange={e => setNK(e.target.value)} placeholder="KM" style={{ width: 70 }} />
-            <button className="btn btn-out btn-sm" onClick={handleAddMina}><i className="ti ti-plus" /></button>
-          </div>
-        </div>
+
       </div>
 
       {/* DESTINOS */}

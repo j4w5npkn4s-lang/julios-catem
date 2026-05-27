@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import ModalDetalleViaje from '../components/ModalDetalleViaje'
 import { useApp } from '../lib/AppContext'
 import Pill from '../components/Pill'
 import ModalLlegada from '../components/ModalLlegada'
@@ -12,6 +13,7 @@ export default function Dashboard({ onNewTicket }) {
   const [pagoVs, setPagoVs]     = useState(null)
   const [showConcil, setShowConcil] = useState(false)
   const [selPago, setSelPago]   = useState(new Set())
+  const [detalleV, setDetalleV] = useState(null)
 
   const p = perm() || {}
 
@@ -80,7 +82,7 @@ export default function Dashboard({ onNewTicket }) {
                 <thead><tr><th>TICKET ID</th><th>TIPO</th><th>TRACTO</th><th>M³</th><th>OPERADOR</th><th>FECHA SAL.</th><th>ESTADO</th><th>PROBLEMA</th><th>ACCIÓN</th></tr></thead>
                 <tbody>
                   {conProblema.length ? conProblema.map(v => (
-                    <tr key={v.id} className="tr">
+                    <tr key={v.id} className="tr" onClick={() => setDetalleV(v)}>
                       <td><span className="mono" style={{ color: 'var(--acc)' }}>{v.id}</span></td>
                       <td><Pill s={v.tipo} /></td>
                       <td>{v.tracto}</td>
@@ -133,7 +135,7 @@ export default function Dashboard({ onNewTicket }) {
                   <thead><tr><th>TICKET</th><th>TRACTO</th><th>M³</th><th>COBRO</th><th>FECHA</th></tr></thead>
                   <tbody>
                     {pendConcil.length ? pendConcil.map(v => (
-                      <tr key={v.id} className="tr">
+                      <tr key={v.id} className="tr" onClick={() => setDetalleV(v)}>
                         <td><span className="mono" style={{ color: 'var(--acc)' }}>{v.id}</span></td>
                         <td>{v.tracto}</td>
                         <td className="mono">{vM3(v)}</td>
@@ -170,7 +172,7 @@ export default function Dashboard({ onNewTicket }) {
                   <thead><tr><th></th><th>TICKET</th><th>OPERADOR</th><th>M³</th><th>A PAGAR</th><th>FECHA</th></tr></thead>
                   <tbody>
                     {pendPago.length ? pendPago.map(v => (
-                      <tr key={v.id} className="tr">
+                      <tr key={v.id} className="tr" onClick={() => setDetalleV(v)}>
                         <td><input type="checkbox" checked={selPago.has(v.id)} onChange={() => toggleSelPago(v.id)} style={{ accentColor: 'var(--acc)' }} /></td>
                         <td><span className="mono" style={{ color: 'var(--acc)' }}>{v.id}</span></td>
                         <td style={{ fontSize: 10 }}>{v.operador}</td>
@@ -233,6 +235,7 @@ export default function Dashboard({ onNewTicket }) {
       )}
 
       {/* MODALES */}
+      {detalleV && <ModalDetalleViaje viaje={detalleV} onClose={() => setDetalleV(null)} onReabrir={id => { reabrirViaje(id); setDetalleV(null) }} />}
       {llegadaV && <ModalLlegada viaje={llegadaV} onClose={() => setLlegadaV(null)} onSaved={() => setLlegadaV(null)} />}
       {pagoVs && <ModalPago viajes={pagoVs} onClose={() => { setPagoVs(null); setSelPago(new Set()) }} onSaved={() => { setPagoVs(null); setSelPago(new Set()) }} />}
       {showConcil && <ModalConciliacion onClose={() => setShowConcil(false)} onSaved={() => setShowConcil(false)} />}

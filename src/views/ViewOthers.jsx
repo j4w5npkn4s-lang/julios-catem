@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import ModalDetallePago from '../components/ModalDetallePago'
+import ModalPago from '../components/ModalPago'
 import { useApp } from '../lib/AppContext'
 import Pill from '../components/Pill'
 import { useToast } from '../components/Toast'
@@ -17,7 +18,6 @@ export function ViewPagos() {
   const [detallePago, setDetallePago] = useState(null)
   const p = perm()
 
-  const ModalPago = require('../components/ModalPago').default
 
   // Viajes filtrados
   const vsFiltrados = viajes.filter(v => {

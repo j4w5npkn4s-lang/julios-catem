@@ -172,6 +172,29 @@ export function ViewPagos() {
             </tbody>
           </table>
         </div>
+        {/* BARRA TOTAL SELECCIONADOS */}
+        {selec.size > 0 && (
+          <div style={{ padding:'14px 16px', borderTop:'2px solid var(--border)', background:'var(--bg3)', display:'flex', alignItems:'center', gap:16, flexWrap:'wrap' }}>
+            <div style={{ fontSize:12, color:'var(--muted)' }}>
+              <b style={{ color:'var(--text)', fontSize:14 }}>{selec.size}</b> ticket{selec.size!==1?'s':''} seleccionado{selec.size!==1?'s':''}
+            </div>
+            <div style={{ fontSize:12 }}>
+              M³: <b style={{ fontFamily:"'Space Mono',monospace" }}>{selecViajes.reduce((a,v)=>a+vM3(v),0).toFixed(2)}</b>
+            </div>
+            <div style={{ fontFamily:"'Space Mono',monospace", fontSize:18, fontWeight:700, color:'var(--pago)' }}>
+              Total a pagar: {fmt(totalPago)}
+            </div>
+            <div style={{ flex:1 }} />
+            <button className="btn btn-out btn-sm" onClick={() => setSelec(new Set())}>
+              <i className="ti ti-x" />Limpiar
+            </button>
+            {p.canPagar && (
+              <button className="btn btn-ok" style={{ padding:'10px 20px', fontSize:13 }} onClick={() => setPagoVs(selecViajes)}>
+                <i className="ti ti-cash" style={{ fontSize:16 }} />Pagar {selec.size} ticket{selec.size!==1?'s':''}
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {pagoVs && <ModalPago viajes={pagoVs} onClose={() => { setPagoVs(null); setSelec(new Set()) }} onSaved={() => { setPagoVs(null); setSelec(new Set()) }} />}

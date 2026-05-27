@@ -101,7 +101,7 @@ export function ViewPagos() {
                 <th><input type="checkbox" checked={selec.size===vsFiltrados.length&&vsFiltrados.length>0} onChange={toggleAll} style={{accentColor:'var(--acc)'}} /></th>
                 <th>TICKET</th><th>AGREMIADO</th><th>TRACTO</th><th>TIPO</th>
                 <th>OPERADOR</th><th>FECHA SAL.</th><th>M³</th><th>A PAGAR</th>
-                <th>FOTOS</th><th>ESTADO</th>
+                <th>FOTOS</th><th>ESTADO</th><th>ACCIÓN</th>
               </tr>
             </thead>
             <tbody>
@@ -133,6 +133,13 @@ export function ViewPagos() {
                             : <span className="pill pa" style={{fontSize:9}}>{v.estado==='abierto'?'Adelanto posible':'Pend. conciliar'}</span>
                       }
                     </td>
+                    {v.pagado !== true && p.canPagar && (
+                      <td onClick={e => e.stopPropagation()}>
+                        <button className="btn btn-ok btn-xs" onClick={() => setPagoVs([v])}>
+                          <i className="ti ti-cash" />Pagar
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 )
               }) : (

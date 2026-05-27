@@ -1,9 +1,13 @@
+import { useState } from 'react'
 import { useApp } from '../lib/AppContext'
+import ModalPago from './ModalPago'
 import Pill from './Pill'
 
 export default function ModalDetalleViaje({ viaje: v, onClose, onReabrir }) {
   const { vCobro, vPago, vUtil, vM3, fmt, pagos, agremiados, perm } = useApp()
   const p = perm()
+
+  const [showPago, setShowPago] = useState(false)
 
   if (!v) return null
 
@@ -129,8 +133,17 @@ export default function ModalDetalleViaje({ viaje: v, onClose, onReabrir }) {
             </button>
           )}
           <div style={{ flex: 1 }} />
+          {v.pagado !== true && p.canPagar && (
+            <button className="btn btn-ok btn-sm" onClick={() => setShowPago(true)}>
+              <i className="ti ti-cash" />Registrar pago
+            </button>
+          )}
+          {v.pagado === true && (
+            <span className="pill pg" style={{ fontSize: 11, padding: '5px 12px' }}>✓ Pagado</span>
+          )}
           <button className="btn btn-out" onClick={onClose}>Cerrar</button>
         </div>
+      {showPago && <ModalPago viajes={[v]} onClose={() => setShowPago(false)} onSaved={() => { setShowPago(false); onClose() }} />}
       </div>
     </div>
   )

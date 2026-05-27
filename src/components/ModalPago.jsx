@@ -8,7 +8,7 @@ export default function ModalPago({ viajes: viajesSelec, onClose, onSaved }) {
   const { registrarPago, vPago, vM3, fmt, uploadFoto, today } = useApp()
   const toast = useToast()
   const [fecha, setFecha]   = useState(today())
-  const [monto, setMonto]   = useState('')
+  const [monto, setMonto]   = useState(() => totalPago.toFixed(2))
   const [folio, setFolio]   = useState('')
   const [foto, setFoto]     = useState(null)
   const [saving, setSaving] = useState(false)

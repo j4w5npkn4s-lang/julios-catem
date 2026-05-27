@@ -145,7 +145,14 @@ export function AppProvider({ children }) {
     }))
     const { error } = await supabase.from('pagos_camionero').insert(rows)
     if (error) throw error
-    for (const id of viajeIds) await updateViaje(id, { estado: 'cerrado' })
+    for (const id of viajeIds) {
+      const v = viajes.find(x => x.id === id)
+      // Solo cerrar si ya estaba pendiente_pago. Si está abierto es adelanto, mantener estado
+      if (v && v.estado === 'pendiente_pago') {
+        await updateViaje(id, { estado: 'cerrado' })
+      }
+      // Si está abierto o pendiente_conciliar = adelanto, no cambiar estado
+    }
   }
 
   // Conciliaciones

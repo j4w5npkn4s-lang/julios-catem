@@ -11,7 +11,7 @@ export function ViewPagos() {
   const { viajes, agremiados, pagos, vPago, vM3, fmt, perm } = useApp()
   const toast = useToast()
   const [fAgremiado, setFAgremiado] = useState('')
-  const [fEstado, setFEstado]       = useState('pendiente_pago')
+  const [fEstado, setFEstado]       = useState('sin_pagar')
   const [selec, setSelec]           = useState(new Set())
   const [pagoVs, setPagoVs]         = useState(null)
   const [tab, setTab]               = useState('pendientes')
@@ -20,8 +20,10 @@ export function ViewPagos() {
 
 
   // Viajes filtrados
+  const SIN_PAGAR = ['abierto','pendiente_conciliar','en_conciliacion','pendiente_pago']
   const vsFiltrados = viajes.filter(v => {
-    if (fEstado && v.estado !== fEstado) return false
+    if (fEstado === 'sin_pagar' && !SIN_PAGAR.includes(v.estado)) return false
+    if (fEstado && fEstado !== 'sin_pagar' && v.estado !== fEstado) return false
     if (fAgremiado && v.agremiado_id !== fAgremiado) return false
     return true
   })
@@ -65,6 +67,8 @@ export function ViewPagos() {
         </select>
         <select value={fEstado} onChange={e => { setFEstado(e.target.value); setSelec(new Set()) }}
           style={{ height:32, fontSize:11, padding:'0 8px', background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:7, color:'var(--text)', minWidth:160 }}>
+          <option value="sin_pagar">Sin pagar (todos)</option>
+          <option value="abierto">Abiertos (adelanto)</option>
           <option value="pendiente_pago">Pendientes de pago</option>
           <option value="cerrado">Pagados / Cerrados</option>
           <option value="">Todos</option>

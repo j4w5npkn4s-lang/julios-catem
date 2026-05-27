@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useApp } from '../lib/AppContext'
+import ModalDetalleCamion from '../components/ModalDetalleCamion'
 import { useToast } from '../components/Toast'
 import Modal from '../components/Modal'
 import FotoSlot from '../components/FotoSlot'
@@ -21,6 +22,7 @@ export default function ViewFlotilla() {
   const [saving, setSaving]       = useState(false)
   const [filtro, setFiltro]       = useState('todos')
   const [search, setSearch]       = useState('')
+  const [detalleCamion, setDetalleCamion] = useState(null)
   const p = perm()
 
   // Auto-inactive: no trip in 7 days
@@ -128,7 +130,7 @@ export default function ViewFlotilla() {
                 const activo = esActivo(c)
                 const sinViaje = esSinViaje(c)
                 return (
-                  <tr key={c.id} className="tr">
+                  <tr key={c.id} className="tr" onClick={() => setDetalleCamion(c)}>
                     <td><b style={{ fontFamily: "'Space Mono',monospace", color: 'var(--acc)' }}>{c.placa_tracto}</b></td>
                     <td><Pill s={c.tipo} /></td>
                     <td style={{ fontFamily: "'Space Mono',monospace", fontSize: 10 }}>{c.placa_gondola1 || '—'}</td>
@@ -164,6 +166,8 @@ export default function ViewFlotilla() {
           </table>
         </div>
       </div>
+
+      {detalleCamion && <ModalDetalleCamion camion={detalleCamion} onClose={() => setDetalleCamion(null)} />}
 
       {/* Modal */}
       {showModal && (

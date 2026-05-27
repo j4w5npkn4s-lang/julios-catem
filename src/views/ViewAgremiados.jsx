@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useApp } from '../lib/AppContext'
+import ModalViajesAgremiado from '../components/ModalViajesAgremiado'
 import { useToast } from '../components/Toast'
 import Modal from '../components/Modal'
 import Pill from '../components/Pill'
@@ -14,6 +15,7 @@ export default function ViewAgremiados() {
   const [correo, setCorreo]       = useState('')
   const [saving, setSaving]       = useState(false)
   const [search, setSearch]       = useState('')
+  const [viajesAgr, setViajesAgr] = useState(null)
   const p = perm()
 
   const activos = agremiados.filter(a => a.activo !== false)
@@ -85,6 +87,7 @@ export default function ViewAgremiados() {
                   {a.correo   && <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 1 }}><i className="ti ti-mail"  style={{ fontSize: 10, marginRight: 4 }} />{a.correo}</div>}
                 </div>
                 <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
+                  <button className="btn btn-info btn-xs" onClick={() => setViajesAgr(a)} title="Ver viajes"><i className="ti ti-truck" /></button>
                   {p.canConfig && <button className="btn btn-out btn-xs" onClick={() => openEdit(a)}><i className="ti ti-edit" /></button>}
                   {p.canTodo   && <button className="btn btn-danger btn-xs" onClick={() => handleDelete(a)}><i className="ti ti-trash" /></button>}
                 </div>
@@ -111,6 +114,8 @@ export default function ViewAgremiados() {
           </div>
         )}
       </div>
+
+      {viajesAgr && <ModalViajesAgremiado agremiado={viajesAgr} onClose={() => setViajesAgr(null)} />}
 
       {showModal && (
         <Modal title={editA ? 'Editar agremiado' : 'Nuevo agremiado'} onClose={() => setShowModal(false)}

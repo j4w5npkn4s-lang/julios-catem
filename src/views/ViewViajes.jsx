@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useApp } from '../lib/AppContext'
+import ModalDetalleViaje from '../components/ModalDetalleViaje'
 import Pill from '../components/Pill'
 import ModalLlegada from '../components/ModalLlegada'
 import ModalPago from '../components/ModalPago'
@@ -11,6 +12,7 @@ export default function ViewViajes({ onNewTicket }) {
   const [fFecha, setFFecha]   = useState('')
   const [q, setQ]             = useState('')
   const [llegadaV, setLlegadaV] = useState(null)
+  const [detalleV, setDetalleV] = useState(null)
   const [pagoV, setPagoV]     = useState(null)
 
   const p = perm() || {}
@@ -61,7 +63,7 @@ export default function ViewViajes({ onNewTicket }) {
             </thead>
             <tbody>
               {filtered.length ? filtered.map(v => (
-                <tr key={v.id} className="tr">
+                <tr key={v.id} className="tr" onClick={() => setDetalleV(v)}>
                   <td><span className="mono" style={{ color: 'var(--acc)' }}>{v.id}</span></td>
                   <td><Pill s={v.tipo} /></td>
                   <td><b>{v.tracto}</b></td>
@@ -111,6 +113,7 @@ export default function ViewViajes({ onNewTicket }) {
         </div>
       </div>
 
+      {detalleV && <ModalDetalleViaje viaje={detalleV} onClose={() => setDetalleV(null)} onReabrir={id => { reabrirViaje(id); setDetalleV(null) }} />}
       {llegadaV && <ModalLlegada viaje={llegadaV} onClose={() => setLlegadaV(null)} onSaved={() => setLlegadaV(null)} />}
       {pagoV && <ModalPago viajes={[pagoV]} onClose={() => setPagoV(null)} onSaved={() => setPagoV(null)} />}
     </div>

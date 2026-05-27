@@ -8,7 +8,6 @@ const NAV = [
   { id: 'flotilla',   ico: 'truck-delivery',   label: 'Flotilla',         roles: ['admin','contador','supervisor'] },
   { id: 'agremiados', ico: 'users-group',      label: 'Agremiados',       roles: ['admin','contador','supervisor'] },
   { id: 'est',        ico: 'file-invoice',     label: 'Estimaciones',     roles: ['admin','contador','supervisor'] },
-  { id: 'concil',     ico: 'file-check',       label: 'Conciliaciones',   roles: ['admin','contador'] },
   { id: 'pagos',      ico: 'cash',             label: 'Pagos',            roles: ['admin','contador'] },
   { id: 'reportes',   ico: 'chart-bar',        label: 'Reportes',         roles: ['admin','contador'] },
   { id: 'config',     ico: 'settings',         label: 'Configuración',    roles: ['admin'] },

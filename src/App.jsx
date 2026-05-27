@@ -8,7 +8,6 @@ import ViewViajes from './views/ViewViajes'
 import ViewFlotilla from './views/ViewFlotilla'
 import ViewAgremiados from './views/ViewAgremiados'
 import ViewEstimaciones from './views/ViewEstimaciones'
-import ViewConciliaciones from './views/ViewConciliaciones'
 import { ViewPagos, ViewReportes, ViewConfig, ViewUsuarios } from './views/ViewOthers'
 import HomeChecador from './views/HomeChecador'
 import HomeAuxContador from './views/HomeAuxContador'
@@ -44,7 +43,6 @@ function AppInner() {
 
   const badges = {
     viajes:  viajes.filter(v => ['abierto','pendiente_conciliar'].includes(v.estado)).length || 0,
-    concil:  viajes.filter(v => v.estado === 'pendiente_conciliar').length || 0,
     pagos:   viajes.filter(v => v.estado === 'pendiente_pago').length || 0,
   }
 
@@ -58,7 +56,6 @@ function AppInner() {
       case 'flotilla':   return <ViewFlotilla />
       case 'agremiados': return <ViewAgremiados />
       case 'est':        return <ViewEstimaciones />
-      case 'concil':     return <ViewConciliaciones />
       case 'pagos':      return <ViewPagos />
       case 'reportes':   return <ViewReportes />
       case 'config':     return <ViewConfig />

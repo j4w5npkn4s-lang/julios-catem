@@ -1,5 +1,5 @@
 // ViewEstimaciones.jsx
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { useApp } from '../lib/AppContext'
 import Pill from '../components/Pill'
 import { useToast } from '../components/Toast'
@@ -29,7 +29,7 @@ export function ViewEstimaciones() {
     } catch (err) { toast(err.message, 'err') }
   }
 
-  const filtered = useMemo(() => estimaciones.filter(e => e.year === year), [estimaciones, year])
+  const filtered = estimaciones.filter(e => e.year === year)
 
   return (
     <div>

@@ -50,7 +50,7 @@ export default function Dashboard({ onNewTicket }) {
   // Años para histórico
   const YEARS = [2026, 2025, 2024]
   const [histYear, setHistYear] = useState(2026)
-  const estYear = useMemo(() => estimaciones.filter(e => e.year === histYear), [estimaciones, histYear])
+  const estYear = estimaciones.filter(e => e.year === histYear)
 
   return (
     <div>

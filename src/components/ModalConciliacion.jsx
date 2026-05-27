@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { useApp } from '../lib/AppContext'
 import { useToast } from '../components/Toast'
 import Modal from '../components/Modal'
@@ -16,7 +16,7 @@ export default function ModalConciliacion({ onClose, onSaved }) {
   const [saving, setSaving] = useState(false)
 
   // Viajes elegibles: pendiente_conciliar
-  const elegibles = useMemo(() => viajes.filter(v => v.estado === 'pendiente_conciliar'), [viajes])
+  const elegibles = viajes.filter(v => v.estado === 'pendiente_conciliar')
   const [selec, setSelec] = useState(() => new Set(elegibles.map(v => v.id)))
 
   function toggleAll() {

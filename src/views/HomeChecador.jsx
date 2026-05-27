@@ -12,16 +12,12 @@ export default function HomeChecador({ onNewTicket }) {
   const saludo = hora < 12 ? 'Buenos días' : hora < 19 ? 'Buenas tardes' : 'Buenas noches'
   const nombre = user?.nombre?.split(' ')[0] || ''
 
-  const abiertos = useMemo(() => viajes.filter(v => v.estado === 'abierto'), [viajes])
-  const hoy      = useMemo(() => viajes.filter(v => v.fecha_salida === today()), [viajes, today])
+  const abiertos = viajes.filter(v => v.estado === 'abierto')
+  const hoy      = viajes.filter(v => v.fecha_salida === today())
 
-  const resultados = useMemo(() => {
-    if (!search || search.length < 2) return []
-    const q = search.toLowerCase()
-    return viajes.filter(v =>
-      (v.id + v.tracto + v.operador + (v.gondola1||'')).toLowerCase().includes(q)
-    ).slice(0, 6)
-  }, [search, viajes])
+  const resultados = (!search || search.length < 2) ? [] : viajes.filter(v =>
+    (v.id + v.tracto + v.operador + (v.gondola1||'')).toLowerCase().includes(search.toLowerCase())
+  ).slice(0, 6)
 
   return (
     <div style={{ maxWidth: 480, margin: '0 auto', paddingBottom: 20 }}>

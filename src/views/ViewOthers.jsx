@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import ModalDetallePago from '../components/ModalDetallePago'
 import { useApp } from '../lib/AppContext'
 import Pill from '../components/Pill'
 import { useToast } from '../components/Toast'
@@ -12,6 +13,8 @@ export function ViewPagos() {
   const [fEstado, setFEstado]       = useState('pendiente_pago')
   const [selec, setSelec]           = useState(new Set())
   const [pagoVs, setPagoVs]         = useState(null)
+  const [tab, setTab]               = useState('pendientes')
+  const [detallePago, setDetallePago] = useState(null)
   const p = perm()
 
   const ModalPago = require('../components/ModalPago').default
@@ -46,6 +49,13 @@ export function ViewPagos() {
 
   return (
     <div>
+      {/* Tabs */}
+      <div className="dtabs" style={{ marginBottom: 12 }}>
+        <button className={`dtab${tab==='pendientes'?' active':''}`} onClick={() => setTab('pendientes')}>💰 Pendientes de pago</button>
+        <button className={`dtab${tab==='historial'?' active':''}`} onClick={() => setTab('historial')}>📋 Historial de pagos</button>
+      </div>
+
+      {tab === 'pendientes' && <>
       {/* Filtros */}
       <div style={{ display:'flex', gap:8, marginBottom:12, flexWrap:'wrap', alignItems:'center' }}>
         <select value={fAgremiado} onChange={e => { setFAgremiado(e.target.value); setSelec(new Set()) }}
@@ -116,6 +126,79 @@ export function ViewPagos() {
       </div>
 
       {pagoVs && <ModalPago viajes={pagoVs} onClose={() => { setPagoVs(null); setSelec(new Set()) }} onSaved={() => { setPagoVs(null); setSelec(new Set()) }} />}
+      </>}
+
+      {tab === 'historial' && <HistorialPagos onDetalle={setDetallePago} />}
+
+      {detallePago && <ModalDetallePago pago={detallePago} onClose={() => setDetallePago(null)} />}
+    </div>
+  )
+}
+
+function HistorialPagos({ onDetalle }) {
+  const { pagos, viajes, agremiados, fmt } = useApp()
+  const [fAgr, setFAgr] = useState('')
+
+  // Deduplicate: group masivo pagos by folio_masivo, show individual pagos
+  const groups = []
+  const seen = new Set()
+  pagos.forEach(p => {
+    if (p.masivo && p.folio_masivo) {
+      if (!seen.has(p.folio_masivo)) {
+        seen.add(p.folio_masivo)
+        const grupo = pagos.filter(x => x.folio_masivo === p.folio_masivo)
+        const total = grupo.reduce((a,x) => a+x.monto,0)
+        const viajesGrupo = grupo.map(x => viajes.find(v=>v.id===x.viaje_id)).filter(Boolean)
+        const agId = viajesGrupo[0]?.agremiado_id
+        groups.push({ ...p, _total: total, _count: grupo.length, _agId: agId })
+      }
+    } else {
+      const v = viajes.find(x=>x.id===p.viaje_id)
+      groups.push({ ...p, _total: p.monto, _count: 1, _agId: v?.agremiado_id })
+    }
+  })
+
+  const filtered = fAgr ? groups.filter(g => g._agId === fAgr) : groups
+  const getNombre = id => agremiados.find(a=>a.id===id)?.nombre||'—'
+
+  return (
+    <div>
+      <div style={{ display:'flex', gap:8, marginBottom:10, alignItems:'center' }}>
+        <select value={fAgr} onChange={e=>setFAgr(e.target.value)}
+          style={{ height:30, fontSize:11, padding:'0 8px', background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:7, color:'var(--text)', minWidth:160 }}>
+          <option value="">Todos los agremiados</option>
+          {agremiados.filter(a=>a.activo!==false).map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}
+        </select>
+        <span style={{ fontSize:11, color:'var(--muted)' }}>{filtered.length} pago(s)</span>
+      </div>
+      <div className="tc">
+        <div className="tw">
+          <table>
+            <thead>
+              <tr>
+                <th>FECHA</th><th>AGREMIADO</th><th>TIPO</th><th>VIAJES</th>
+                <th>MONTO TOTAL</th><th>FOLIO</th><th>COMPROBANTE</th><th>VER</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length ? filtered.map((p,i) => (
+                <tr key={p.id+i} className="tr" onClick={() => onDetalle(p)}>
+                  <td>{p.fecha}</td>
+                  <td style={{fontSize:10}}>{getNombre(p._agId)}</td>
+                  <td>{p.masivo ? <span className="pill pp">Masivo</span> : <span className="pill pgr">Individual</span>}</td>
+                  <td className="mono" style={{textAlign:'center'}}>{p._count}</td>
+                  <td className="mono" style={{color:'var(--ok)',fontWeight:700}}>{fmt(p._total)}</td>
+                  <td style={{fontSize:10,color:'var(--muted)'}}>{p.folio||'—'}</td>
+                  <td>{p.comprobante_url?<span className="pill pg" style={{fontSize:9}}>✓ Sí</span>:<span className="pill pr" style={{fontSize:9}}>No</span>}</td>
+                  <td><button className="btn btn-info btn-xs" onClick={e=>{e.stopPropagation();onDetalle(p)}}><i className="ti ti-eye"/>Ver</button></td>
+                </tr>
+              )) : (
+                <tr><td colSpan={8} style={{textAlign:'center',padding:24,color:'var(--muted)'}}>Sin pagos registrados</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   )
 }

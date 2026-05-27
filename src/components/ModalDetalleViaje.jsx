@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import ModalEditarViaje from './ModalEditarViaje'
 import { useApp } from '../lib/AppContext'
 import ModalPago from './ModalPago'
 import Pill from './Pill'
@@ -8,6 +9,7 @@ export default function ModalDetalleViaje({ viaje: v, onClose, onReabrir }) {
   const p = perm()
 
   const [showPago, setShowPago] = useState(false)
+  const [showEdit, setShowEdit] = useState(false)
 
   if (!v) return null
 
@@ -133,6 +135,11 @@ export default function ModalDetalleViaje({ viaje: v, onClose, onReabrir }) {
             </button>
           )}
           <div style={{ flex: 1 }} />
+          {p.canTodo && (
+            <button className="btn btn-out btn-sm" onClick={() => setShowEdit(true)}>
+              <i className="ti ti-edit" />Editar ticket
+            </button>
+          )}
           {v.pagado !== true && p.canPagar && (
             <button className="btn btn-ok btn-sm" onClick={() => setShowPago(true)}>
               <i className="ti ti-cash" />Registrar pago
@@ -144,6 +151,7 @@ export default function ModalDetalleViaje({ viaje: v, onClose, onReabrir }) {
           <button className="btn btn-out" onClick={onClose}>Cerrar</button>
         </div>
       {showPago && <ModalPago viajes={[v]} onClose={() => setShowPago(false)} onSaved={() => { setShowPago(false); onClose() }} />}
+      {showEdit && <ModalEditarViaje viaje={v} onClose={() => setShowEdit(false)} onSaved={() => { setShowEdit(false); onClose() }} />}
       </div>
     </div>
   )

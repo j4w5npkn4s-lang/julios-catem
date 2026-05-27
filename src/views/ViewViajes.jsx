@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useApp } from '../lib/AppContext'
 import ModalDetalleViaje from '../components/ModalDetalleViaje'
+import ModalEditarViaje from '../components/ModalEditarViaje'
 import Pill from '../components/Pill'
 import ModalLlegada from '../components/ModalLlegada'
 import ModalPago from '../components/ModalPago'
@@ -13,6 +14,7 @@ export default function ViewViajes({ onNewTicket }) {
   const [q, setQ]             = useState('')
   const [llegadaV, setLlegadaV] = useState(null)
   const [detalleV, setDetalleV] = useState(null)
+  const [editarV, setEditarV]   = useState(null)
   const [pagoV, setPagoV]     = useState(null)
 
   const p = perm() || {}
@@ -98,6 +100,11 @@ export default function ViewViajes({ onNewTicket }) {
                         <i className="ti ti-cash" />Pagar
                       </button>
                     )}
+                    {p.canTodo && (
+                      <button className="btn btn-out btn-xs" onClick={e => { e.stopPropagation(); setEditarV(v) }}>
+                        <i className="ti ti-edit" />
+                      </button>
+                    )}
                     {v.estado === 'cerrado' && p.canTodo && (
                       <button className="btn btn-danger btn-xs" onClick={() => reabrirViaje(v.id)}>
                         <i className="ti ti-lock-open" />
@@ -114,6 +121,7 @@ export default function ViewViajes({ onNewTicket }) {
       </div>
 
       {detalleV && <ModalDetalleViaje viaje={detalleV} onClose={() => setDetalleV(null)} onReabrir={id => { reabrirViaje(id); setDetalleV(null) }} />}
+      {editarV && <ModalEditarViaje viaje={editarV} onClose={() => setEditarV(null)} onSaved={() => setEditarV(null)} />}
       {llegadaV && <ModalLlegada viaje={llegadaV} onClose={() => setLlegadaV(null)} onSaved={() => setLlegadaV(null)} />}
       {pagoV && <ModalPago viajes={[pagoV]} onClose={() => setPagoV(null)} onSaved={() => setPagoV(null)} />}
     </div>

@@ -1,28 +1,34 @@
 import { useState } from 'react'
-import { useApp, ROLES } from '../lib/AppContext'
+import { useApp } from '../lib/AppContext'
 
 const NAV = [
-  { id: 'home',       ico: 'home',             label: 'Inicio',         roles: ['checador','aux_contador'] },
-  { id: 'dash',       ico: 'layout-dashboard', label: 'Dashboard',      roles: ['admin','contador','supervisor'] },
-  { id: 'viajes',     ico: 'truck',            label: 'Todos los viajes',roles: ['admin'] },
-  { id: 'est',        ico: 'file-invoice',     label: 'Estimaciones',   roles: ['admin','contador','supervisor'] },
-  { id: 'concil',     ico: 'file-check',       label: 'Conciliaciones', roles: ['admin','contador'] },
-  { id: 'pagos',      ico: 'cash',             label: 'Pagos',          roles: ['admin','contador'] },
-  { id: 'reportes',   ico: 'chart-bar',        label: 'Reportes',       roles: ['admin','contador'] },
-  { id: 'config',     ico: 'settings',         label: 'Configuración',  roles: ['admin'] },
-  { id: 'usuarios',   ico: 'users',            label: 'Usuarios',       roles: ['admin'] },
+  { id: 'home',     ico: 'home',             label: 'Inicio',          roles: ['checador','aux_contador'] },
+  { id: 'dash',     ico: 'layout-dashboard', label: 'Dashboard',       roles: ['admin','contador','supervisor'] },
+  { id: 'viajes',   ico: 'truck',            label: 'Todos los viajes', roles: ['admin'] },
+  { id: 'est',      ico: 'file-invoice',     label: 'Estimaciones',    roles: ['admin','contador','supervisor'] },
+  { id: 'concil',   ico: 'file-check',       label: 'Conciliaciones',  roles: ['admin','contador'] },
+  { id: 'pagos',    ico: 'cash',             label: 'Pagos',           roles: ['admin','contador'] },
+  { id: 'reportes', ico: 'chart-bar',        label: 'Reportes',        roles: ['admin','contador'] },
+  { id: 'config',   ico: 'settings',         label: 'Configuración',   roles: ['admin'] },
+  { id: 'usuarios', ico: 'users',            label: 'Usuarios',        roles: ['admin'] },
 ]
 
 export default function Sidebar({ current, onChange, badges = {} }) {
-  const { user, logout } = useApp()
+  const { user, logout, config } = useApp()
   const [exp, setExp] = useState(false)
   const rol = user?.rol
-
   const visible = NAV.filter(n => n.roles.includes(rol))
+
+  const logoUrl = config?.logo_url
 
   return (
     <aside className={`sb${exp ? ' exp' : ''}`}>
-      <div className="sb-logo">JC</div>
+      <div className="sb-logo" title="Julios Catem">
+        {logoUrl
+          ? <img src={logoUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }} />
+          : <span>JC</span>
+        }
+      </div>
 
       {visible.map(n => (
         <button key={n.id} className={`ni${current === n.id ? ' active' : ''}`}

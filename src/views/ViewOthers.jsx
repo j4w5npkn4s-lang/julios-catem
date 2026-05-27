@@ -127,15 +127,18 @@ export function ViewReportes() {
 
 // ══ CONFIG ══
 export function ViewConfig() {
-  const { config, saveConfig, minas, addMina, updateMina } = useApp()
+  const { config, saveConfig, minas, addMina, updateMina, uploadFoto } = useApp()
   const toast = useToast()
   const [cobro, setCobro] = useState(config.tarifa_cobro || '')
   const [pago, setPago]   = useState(config.tarifa_pago || '')
-  const [emp, setEmp]     = useState(config.empresa || '')
-  const [obra, setObra]   = useState(config.obra || '')
-  const [nuevaMina, setNM] = useState('')
-  const [nuevaKm, setNK]  = useState('')
+  const [emp, setEmp]       = useState(config.empresa || '')
+  const [obra, setObra]     = useState(config.obra || '')
+  const [nuevaMina, setNM]  = useState('')
+  const [nuevaKm, setNK]    = useState('')
   const [saving, setSaving] = useState(false)
+  const [logoFile, setLogoFile] = useState(null)
+  const [logoPreview, setLogoPreview] = useState(config.logo_url || null)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
 
   async function handleSaveTarifas() {
     setSaving(true)
@@ -146,11 +149,26 @@ export function ViewConfig() {
     setSaving(false)
   }
 
+  function handleLogoChange(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    setLogoFile(file)
+    const reader = new FileReader()
+    reader.onload = ev => setLogoPreview(ev.target.result)
+    reader.readAsDataURL(file)
+  }
+
   async function handleSaveEmpresa() {
+    setUploadingLogo(true)
     try {
-      await saveConfig({ empresa: emp, obra })
-      toast('Empresa guardada ✓', 'ok')
+      let logo_url = config.logo_url || null
+      if (logoFile) {
+        logo_url = await uploadFoto(logoFile, 'logos')
+      }
+      await saveConfig({ empresa: emp, obra, logo_url })
+      toast('Empresa y logo guardados ✓', 'ok')
     } catch (err) { toast(err.message, 'err') }
+    setUploadingLogo(false)
   }
 
   async function handleAddMina() {
@@ -203,8 +221,26 @@ export function ViewConfig() {
           </div>
           <div className="fg"><label>Nombre empresa</label><input value={emp} onChange={e => setEmp(e.target.value)} /></div>
           <div className="fg"><label>Obra / Proyecto activo</label><input value={obra} onChange={e => setObra(e.target.value)} /></div>
-          <button className="btn btn-acc" style={{ width: '100%', justifyContent: 'center' }} onClick={handleSaveEmpresa}>
-            <i className="ti ti-device-floppy" />Guardar
+          <div className="fg">
+            <label>Logo de la empresa</label>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+              <div style={{ width: 60, height: 60, borderRadius: 10, background: logoPreview ? 'transparent' : 'var(--acc)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, color: '#000', fontFamily: "'Space Mono',monospace", flexShrink: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
+                {logoPreview
+                  ? <img src={logoPreview} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : 'JC'
+                }
+              </div>
+              <div style={{ flex: 1 }}>
+                <input type="file" id="logo-upload" accept="image/*" onChange={handleLogoChange} style={{ display: 'none' }} />
+                <button type="button" className="btn btn-out" style={{ width: '100%' }} onClick={() => document.getElementById('logo-upload').click()}>
+                  <i className="ti ti-upload" />Subir logo (PNG o JPG)
+                </button>
+                <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 4 }}>Aparecerá en el login y en el menú lateral</div>
+              </div>
+            </div>
+          </div>
+          <button className="btn btn-acc" style={{ width: '100%', justifyContent: 'center' }} onClick={handleSaveEmpresa} disabled={uploadingLogo}>
+            <i className="ti ti-device-floppy" />{uploadingLogo ? 'Subiendo logo...' : 'Guardar empresa y logo'}
           </button>
         </div>
 

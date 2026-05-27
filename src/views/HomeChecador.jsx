@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { useApp } from '../lib/AppContext'
 import Pill from '../components/Pill'
 import ModalLlegada from '../components/ModalLlegada'

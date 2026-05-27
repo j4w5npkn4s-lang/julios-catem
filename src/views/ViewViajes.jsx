@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { useApp } from '../lib/AppContext'
 import Pill from '../components/Pill'
 import ModalLlegada from '../components/ModalLlegada'
@@ -15,7 +15,7 @@ export default function ViewViajes({ onNewTicket }) {
 
   const p = perm() || {}
 
-  const filtered = useMemo(() => viajes.filter(v => {
+  const filtered = viajes.filter(v => {
     if (fEst    && v.estimacion_id !== fEst) return false
     if (fStatus && v.estado !== fStatus) return false
     if (fFecha  && v.fecha_salida !== fFecha) return false
@@ -24,7 +24,7 @@ export default function ViewViajes({ onNewTicket }) {
       if (!(v.id + v.tracto + v.operador + (v.gondola1||'') + (v.estimacion_id||'')).toLowerCase().includes(s)) return false
     }
     return true
-  }), [viajes, fEst, fStatus, fFecha, q])
+  })
 
   return (
     <div>

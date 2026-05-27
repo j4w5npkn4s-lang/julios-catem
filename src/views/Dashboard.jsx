@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { useApp } from '../lib/AppContext'
 import Pill from '../components/Pill'
 import ModalLlegada from '../components/ModalLlegada'
@@ -16,22 +16,21 @@ export default function Dashboard({ onNewTicket }) {
   const p = perm() || {}
 
   // DASH 1: REQUIEREN ATENCIÓN
-  const conProblema = useMemo(() => viajes.filter(v =>
+  const conProblema = viajes.filter(v =>
     v.estado !== 'cerrado' && (!v.foto_ticket_salida || !v.foto_tracto || v.estado === 'abierto' || !v.operador || v.operador === '—')
-  ), [viajes])
+  )
 
   // DASH 2: PENDIENTES
-  const estAbiertas  = useMemo(() => new Set(estimaciones.filter(e => e.estado === 'abierta').map(e => e.id)), [estimaciones])
-  const pendConcil   = useMemo(() => viajes.filter(v => v.estado === 'pendiente_conciliar'), [viajes])
-  const pendPago     = useMemo(() => viajes.filter(v => v.estado === 'pendiente_pago'), [viajes])
-  const tCobrar      = useMemo(() => pendConcil.reduce((a, v) => a + vCobro(v), 0), [pendConcil])
-  const tPagar       = useMemo(() => pendPago.reduce((a, v) => a + vPago(v), 0), [pendPago])
+  const pendConcil = viajes.filter(v => v.estado === 'pendiente_conciliar')
+  const pendPago   = viajes.filter(v => v.estado === 'pendiente_pago')
+  const tCobrar    = pendConcil.reduce((a, v) => a + vCobro(v), 0)
+  const tPagar     = pendPago.reduce((a, v) => a + vPago(v), 0)
 
   // DASH 3: HISTÓRICO
-  const totalCob  = useMemo(() => viajes.reduce((a, v) => a + vCobro(v), 0), [viajes])
-  const totalPag  = useMemo(() => viajes.reduce((a, v) => a + vPago(v), 0), [viajes])
+  const totalCob  = viajes.reduce((a, v) => a + vCobro(v), 0)
+  const totalPag  = viajes.reduce((a, v) => a + vPago(v), 0)
   const totalUtil = totalCob - totalPag
-  const totalM3   = useMemo(() => viajes.reduce((a, v) => a + vM3(v), 0), [viajes])
+  const totalM3   = viajes.reduce((a, v) => a + vM3(v), 0)
 
   function toggleSelPago(id) {
     const s = new Set(selPago)

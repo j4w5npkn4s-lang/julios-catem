@@ -323,7 +323,7 @@ export function ViewUsuarios() {
   const [nombre, setNom]          = useState('')
   const [email, setEmail]         = useState('')
   const [pass, setPass]           = useState('')
-  const [sede, setSede]           = useState('CDMX')
+  const [sede, setSede]           = useState('México')
   const [rol, setRol]             = useState('checador')
   const [showPass, setShowPass]   = useState(false)
   const [saving, setSaving]       = useState(false)
@@ -332,10 +332,10 @@ export function ViewUsuarios() {
   const ROLES_LABELS = { admin: 'Administrador', contador: 'Contador', aux_contador: 'Aux. Contador', checador: 'Checador', supervisor: 'Supervisor' }
 
   function openNew() {
-    setEditU(null); setNom(''); setEmail(''); setPass(''); setSede('CDMX'); setRol('checador'); setShowPass(false); setShowModal(true)
+    setEditU(null); setNom(''); setEmail(''); setPass(''); setSede('México'); setRol('checador'); setShowPass(false); setShowModal(true)
   }
   function openEdit(u) {
-    setEditU(u); setNom(u.nombre); setEmail(u.email); setPass(u.password_hash||''); setSede(u.sede||'CDMX'); setRol(u.rol); setShowPass(false); setShowModal(true)
+    setEditU(u); setNom(u.nombre); setEmail(u.email); setPass(u.password_hash||''); setSede(u.sede||'México'); setRol(u.rol); setShowPass(false); setShowModal(true)
   }
 
   async function handleSave() {
@@ -417,7 +417,7 @@ export function ViewUsuarios() {
             </div>
           </div>
           <div className="row2">
-            <div className="fg"><label>Sede</label><select value={sede} onChange={e => setSede(e.target.value)}><option>CDMX</option><option>Tabasco</option><option>Veracruz</option><option>Monterrey</option><option>Campo</option></select></div>
+            <div className="fg"><label>Sede</label><select value={sede} onChange={e => setSede(e.target.value)}><option>México</option><option>Tabasco</option><option>Veracruz</option><option>Monterrey</option><option>Campo</option></select></div>
             <div className="fg"><label>Rol</label><select value={rol} onChange={e => setRol(e.target.value)}><option value="admin">Administrador</option><option value="contador">Contador</option><option value="aux_contador">Aux. Contador</option><option value="checador">Checador</option><option value="supervisor">Supervisor</option></select></div>
           </div>
         </Modal>

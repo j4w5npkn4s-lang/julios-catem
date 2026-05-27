@@ -98,7 +98,12 @@ export function ViewPagos() {
           <table>
             <thead>
               <tr>
-                <th><input type="checkbox" checked={selec.size===vsFiltrados.length&&vsFiltrados.length>0} onChange={toggleAll} style={{accentColor:'var(--acc)'}} /></th>
+                <th style={{width:36}}>
+                  <div onClick={toggleAll} style={{width:18,height:18,borderRadius:4,border:`2px solid ${selec.size===vsFiltrados.length&&vsFiltrados.length>0?'var(--acc)':'var(--border2)'}`,background:selec.size===vsFiltrados.length&&vsFiltrados.length>0?'var(--acc)':'transparent',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto'}}>
+                    {selec.size===vsFiltrados.length&&vsFiltrados.length>0&&<i className="ti ti-check" style={{fontSize:11,color:'#000'}}/>}
+                    {selec.size>0&&selec.size<vsFiltrados.length&&<i className="ti ti-minus" style={{fontSize:11,color:'var(--acc)'}}/>}
+                  </div>
+                </th>
                 <th>TICKET</th><th>AGREMIADO</th><th>TRACTO</th><th>TIPO</th>
                 <th>OPERADOR</th><th>FECHA SAL.</th><th>M³</th><th>A PAGAR</th>
                 <th>FOTOS</th><th>ESTADO</th><th>ACCIÓN</th>
@@ -109,7 +114,11 @@ export function ViewPagos() {
                 const fb = fotosBadge(v)
                 return (
                   <tr key={v.id} className="tr" onClick={() => setDetalleViaje(v)}>
-                    <td onClick={e => e.stopPropagation()}><input type="checkbox" checked={selec.has(v.id)} onChange={() => toggleSelec(v.id)} style={{accentColor:'var(--acc)'}} /></td>
+                    <td onClick={e => e.stopPropagation()} style={{width:36}}>
+                      <div onClick={() => toggleSelec(v.id)} style={{width:18,height:18,borderRadius:4,border:`2px solid ${selec.has(v.id)?'var(--acc)':'var(--border2)'}`,background:selec.has(v.id)?'var(--acc)':'transparent',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto',flexShrink:0}}>
+                        {selec.has(v.id)&&<i className="ti ti-check" style={{fontSize:11,color:'#000'}}/>}
+                      </div>
+                    </td>
                     <td><span className="mono" style={{ color:'var(--acc)' }}>{v.id}</span></td>
                     <td style={{ fontSize:10 }}>{getNombreAgremiado(v.agremiado_id)}</td>
                     <td><b>{v.tracto}</b></td>

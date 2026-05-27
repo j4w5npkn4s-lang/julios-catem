@@ -2,15 +2,17 @@ import { useState } from 'react'
 import { useApp } from '../lib/AppContext'
 
 const NAV = [
-  { id: 'home',     ico: 'home',             label: 'Inicio',          roles: ['checador','aux_contador'] },
-  { id: 'dash',     ico: 'layout-dashboard', label: 'Dashboard',       roles: ['admin','contador','supervisor'] },
-  { id: 'viajes',   ico: 'truck',            label: 'Todos los viajes', roles: ['admin'] },
-  { id: 'est',      ico: 'file-invoice',     label: 'Estimaciones',    roles: ['admin','contador','supervisor'] },
-  { id: 'concil',   ico: 'file-check',       label: 'Conciliaciones',  roles: ['admin','contador'] },
-  { id: 'pagos',    ico: 'cash',             label: 'Pagos',           roles: ['admin','contador'] },
-  { id: 'reportes', ico: 'chart-bar',        label: 'Reportes',        roles: ['admin','contador'] },
-  { id: 'config',   ico: 'settings',         label: 'Configuración',   roles: ['admin'] },
-  { id: 'usuarios', ico: 'users',            label: 'Usuarios',        roles: ['admin'] },
+  { id: 'home',       ico: 'home',             label: 'Inicio',           roles: ['checador','aux_contador'] },
+  { id: 'dash',       ico: 'layout-dashboard', label: 'Dashboard',        roles: ['admin','contador','supervisor'] },
+  { id: 'viajes',     ico: 'truck',            label: 'Todos los viajes', roles: ['admin'] },
+  { id: 'flotilla',   ico: 'truck-delivery',   label: 'Flotilla',         roles: ['admin','contador','supervisor'] },
+  { id: 'agremiados', ico: 'users-group',      label: 'Agremiados',       roles: ['admin','contador','supervisor'] },
+  { id: 'est',        ico: 'file-invoice',     label: 'Estimaciones',     roles: ['admin','contador','supervisor'] },
+  { id: 'concil',     ico: 'file-check',       label: 'Conciliaciones',   roles: ['admin','contador'] },
+  { id: 'pagos',      ico: 'cash',             label: 'Pagos',            roles: ['admin','contador'] },
+  { id: 'reportes',   ico: 'chart-bar',        label: 'Reportes',         roles: ['admin','contador'] },
+  { id: 'config',     ico: 'settings',         label: 'Configuración',    roles: ['admin'] },
+  { id: 'usuarios',   ico: 'users',            label: 'Usuarios',         roles: ['admin'] },
 ]
 
 export default function Sidebar({ current, onChange, badges = {} }) {

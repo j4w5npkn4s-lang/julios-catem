@@ -5,6 +5,8 @@ import Sidebar from './components/Sidebar'
 import Login from './views/Login'
 import Dashboard from './views/Dashboard'
 import ViewViajes from './views/ViewViajes'
+import ViewFlotilla from './views/ViewFlotilla'
+import ViewAgremiados from './views/ViewAgremiados'
 import ViewEstimaciones from './views/ViewEstimaciones'
 import ViewConciliaciones from './views/ViewConciliaciones'
 import { ViewPagos, ViewReportes, ViewConfig, ViewUsuarios } from './views/ViewOthers'
@@ -14,6 +16,7 @@ import ModalTicket from './components/ModalTicket'
 
 const TITLES = {
   home: 'Inicio', dash: 'Dashboard', viajes: 'Todos los viajes',
+  flotilla: 'Flotilla', agremiados: 'Agremiados',
   est: 'Estimaciones', concil: 'Conciliaciones', pagos: 'Pagos',
   reportes: 'Reportes', config: 'Configuración', usuarios: 'Usuarios',
 }
@@ -21,7 +24,7 @@ const TITLES = {
 function AppInner() {
   const { user, viajes, loading } = useApp()
   const toast = useToast()
-  const [view, setView] = useState(null)
+  const [view, setView]         = useState(null)
   const [showTicket, setShowTicket] = useState(false)
 
   if (loading) return (
@@ -40,26 +43,27 @@ function AppInner() {
   const cur = view || defaultView[user.rol] || 'dash'
 
   const badges = {
-    viajes: (viajes.filter(v => v.estado === 'abierto').length + viajes.filter(v => v.estado === 'pendiente_conciliar').length) || 0,
-    concil: viajes.filter(v => v.estado === 'pendiente_conciliar').length || 0,
-    pagos:  viajes.filter(v => v.estado === 'pendiente_pago').length || 0,
+    viajes:  viajes.filter(v => ['abierto','pendiente_conciliar'].includes(v.estado)).length || 0,
+    concil:  viajes.filter(v => v.estado === 'pendiente_conciliar').length || 0,
+    pagos:   viajes.filter(v => v.estado === 'pendiente_pago').length || 0,
   }
 
   const canAddTicket = ['admin', 'checador'].includes(user.rol)
 
-  // Render solo la vista activa — evita crear todos los componentes a la vez
   function renderView() {
     switch (cur) {
-      case 'home':     return user.rol === 'aux_contador' ? <HomeAuxContador /> : <HomeChecador onNewTicket={() => setShowTicket(true)} />
-      case 'dash':     return <Dashboard onNewTicket={() => setShowTicket(true)} />
-      case 'viajes':   return <ViewViajes onNewTicket={() => setShowTicket(true)} />
-      case 'est':      return <ViewEstimaciones />
-      case 'concil':   return <ViewConciliaciones />
-      case 'pagos':    return <ViewPagos />
-      case 'reportes': return <ViewReportes />
-      case 'config':   return <ViewConfig />
-      case 'usuarios': return <ViewUsuarios />
-      default:         return <Dashboard onNewTicket={() => setShowTicket(true)} />
+      case 'home':       return user.rol === 'aux_contador' ? <HomeAuxContador /> : <HomeChecador onNewTicket={() => setShowTicket(true)} />
+      case 'dash':       return <Dashboard onNewTicket={() => setShowTicket(true)} />
+      case 'viajes':     return <ViewViajes onNewTicket={() => setShowTicket(true)} />
+      case 'flotilla':   return <ViewFlotilla />
+      case 'agremiados': return <ViewAgremiados />
+      case 'est':        return <ViewEstimaciones />
+      case 'concil':     return <ViewConciliaciones />
+      case 'pagos':      return <ViewPagos />
+      case 'reportes':   return <ViewReportes />
+      case 'config':     return <ViewConfig />
+      case 'usuarios':   return <ViewUsuarios />
+      default:           return <Dashboard onNewTicket={() => setShowTicket(true)} />
     }
   }
 
@@ -84,9 +88,7 @@ function AppInner() {
             )}
           </div>
         </div>
-        <div className="content">
-          {renderView()}
-        </div>
+        <div className="content">{renderView()}</div>
       </div>
       {showTicket && <ModalTicket onClose={() => setShowTicket(false)} onSaved={() => toast('Ticket registrado', 'ok')} />}
     </div>

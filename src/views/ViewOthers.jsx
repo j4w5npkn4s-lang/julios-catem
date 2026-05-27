@@ -127,7 +127,7 @@ export function ViewReportes() {
 
 // ══ CONFIG ══
 export function ViewConfig() {
-  const { config, saveConfig, minas, addMina, updateMina, uploadFoto } = useApp()
+  const { config, saveConfig, minas, addMina, updateMina, destinos, addDestino, updateDestino, deleteDestino, uploadFoto } = useApp()
   const toast = useToast()
   const [cobro, setCobro] = useState(config.tarifa_cobro || '')
   const [pago, setPago]   = useState(config.tarifa_pago || '')
@@ -265,6 +265,51 @@ export function ViewConfig() {
           </div>
         </div>
       </div>
+
+      {/* DESTINOS */}
+      <div className="tc" style={{ padding: 15, marginTop: 11, gridColumn: '1/-1' }}>
+        <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 11, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <i className="ti ti-route" style={{ color: 'var(--acc)' }} />Rutas (Origen → Destino → KM)
+        </div>
+        <div style={{ marginBottom: 10 }}>
+          {destinos.filter(d => d.activo !== false).map(d => (
+            <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 0', borderBottom: '1px solid var(--border)', fontSize: 11 }}>
+              <span style={{ flex: 1, color: 'var(--cobro)' }}>{d.origen}</span>
+              <span style={{ color: 'var(--muted)' }}>→</span>
+              <span style={{ flex: 1, color: 'var(--info)' }}>{d.destino}</span>
+              <input type="number" defaultValue={d.km} placeholder="KM"
+                style={{ width: 70, padding: '3px 6px', fontSize: 10, background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 5, color: 'var(--text)' }}
+                onBlur={e => updateDestino(d.id, { km: parseFloat(e.target.value)||0 })} />
+              <span style={{ fontSize: 10, color: 'var(--muted)' }}>km</span>
+              <button className="btn btn-danger btn-xs" onClick={() => deleteDestino(d.id)}><i className="ti ti-x" /></button>
+            </div>
+          ))}
+        </div>
+        <NuevaRutaForm addDestino={addDestino} />
+      </div>
+    </div>
+  )
+}
+
+function NuevaRutaForm({ addDestino }) {
+  const toast = useToast()
+  const [origen, setOrigen]   = useState('')
+  const [destino, setDestino] = useState('')
+  const [km, setKm]           = useState('')
+  async function handleAdd() {
+    if (!origen.trim() || !destino.trim()) return toast('Origen y Destino requeridos', 'err')
+    try {
+      await addDestino({ origen: origen.trim().toUpperCase(), destino: destino.trim().toUpperCase(), km: parseFloat(km)||0 })
+      setOrigen(''); setDestino(''); setKm('')
+      toast('Ruta agregada ✓', 'ok')
+    } catch (err) { toast(err.message, 'err') }
+  }
+  return (
+    <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginTop: 8 }}>
+      <input value={origen} onChange={e => setOrigen(e.target.value)} placeholder="Origen (mina)" style={{ flex: 1, minWidth: 100 }} />
+      <input value={destino} onChange={e => setDestino(e.target.value)} placeholder="Destino" style={{ flex: 1, minWidth: 100 }} />
+      <input type="number" value={km} onChange={e => setKm(e.target.value)} placeholder="KM" style={{ width: 70 }} />
+      <button className="btn btn-out btn-sm" onClick={handleAdd}><i className="ti ti-plus" />Agregar</button>
     </div>
   )
 }

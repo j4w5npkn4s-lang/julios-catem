@@ -92,16 +92,31 @@ export function ViewPagos() {
 
       </div>
 
+      {/* Botón seleccionar todos */}
+      <div style={{ display:'flex', gap:8, marginBottom:8, alignItems:'center' }}>
+        <button className="btn btn-out btn-sm" onClick={toggleAll}>
+          {selec.size === vsFiltrados.length && vsFiltrados.length > 0
+            ? <><i className="ti ti-square-minus" />Deseleccionar todos</>
+            : <><i className="ti ti-checkbox" />Seleccionar todos ({vsFiltrados.length})</>
+          }
+        </button>
+        {selec.size > 0 && (
+          <span style={{ fontSize:11, color:'var(--muted)' }}>
+            {selec.size} de {vsFiltrados.length} seleccionados
+          </span>
+        )}
+      </div>
+
       {/* Tabla */}
       <div className="tc">
         <div className="tw">
           <table>
             <thead>
               <tr>
-                <th style={{width:36}}>
-                  <div onClick={toggleAll} style={{width:18,height:18,borderRadius:4,border:`2px solid ${selec.size===vsFiltrados.length&&vsFiltrados.length>0?'var(--acc)':'var(--border2)'}`,background:selec.size===vsFiltrados.length&&vsFiltrados.length>0?'var(--acc)':'transparent',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto'}}>
-                    {selec.size===vsFiltrados.length&&vsFiltrados.length>0&&<i className="ti ti-check" style={{fontSize:11,color:'#000'}}/>}
-                    {selec.size>0&&selec.size<vsFiltrados.length&&<i className="ti ti-minus" style={{fontSize:11,color:'var(--acc)'}}/>}
+                <th style={{width:48, textAlign:'center'}}>
+                  <div onClick={toggleAll} style={{width:22,height:22,borderRadius:5,border:`2px solid ${selec.size===vsFiltrados.length&&vsFiltrados.length>0?'var(--acc)':'var(--border2)'}`,background:selec.size===vsFiltrados.length&&vsFiltrados.length>0?'var(--acc)':'transparent',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto'}}>
+                    {selec.size===vsFiltrados.length&&vsFiltrados.length>0&&<i className="ti ti-check" style={{fontSize:13,color:'#000'}}/>}
+                    {selec.size>0&&selec.size<vsFiltrados.length&&<i className="ti ti-minus" style={{fontSize:13,color:'var(--acc)'}}/>}
                   </div>
                 </th>
                 <th>TICKET</th><th>AGREMIADO</th><th>TRACTO</th><th>TIPO</th>
@@ -114,9 +129,9 @@ export function ViewPagos() {
                 const fb = fotosBadge(v)
                 return (
                   <tr key={v.id} className="tr" onClick={() => setDetalleViaje(v)}>
-                    <td onClick={e => e.stopPropagation()} style={{width:36}}>
-                      <div onClick={() => toggleSelec(v.id)} style={{width:18,height:18,borderRadius:4,border:`2px solid ${selec.has(v.id)?'var(--acc)':'var(--border2)'}`,background:selec.has(v.id)?'var(--acc)':'transparent',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto',flexShrink:0}}>
-                        {selec.has(v.id)&&<i className="ti ti-check" style={{fontSize:11,color:'#000'}}/>}
+                    <td onClick={e => e.stopPropagation()} style={{width:48, textAlign:'center'}}>
+                      <div onClick={() => toggleSelec(v.id)} style={{width:22,height:22,borderRadius:5,border:`2px solid ${selec.has(v.id)?'var(--acc)':'var(--border2)'}`,background:selec.has(v.id)?'var(--acc)':'transparent',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto',flexShrink:0,transition:'all .15s'}}>
+                        {selec.has(v.id)&&<i className="ti ti-check" style={{fontSize:13,color:'#000'}}/>}
                       </div>
                     </td>
                     <td><span className="mono" style={{ color:'var(--acc)' }}>{v.id}</span></td>

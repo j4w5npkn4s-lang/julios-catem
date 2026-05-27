@@ -14,6 +14,7 @@ export default function ModalTicket({ onClose, onSaved }) {
 
   // Form
   const [bid, setBid]         = useState('')
+  const [bid2, setBid2]       = useState('')
   const [estId, setEstId]     = useState('')
   const [origenDestId, setOD] = useState('')  // destino id (origen+destino+km)
   const [camionId, setCamionId] = useState('') // flotilla id
@@ -36,6 +37,7 @@ export default function ModalTicket({ onClose, onSaved }) {
 
   // Fotos
   const [fotoTSal, setFotoTSal]     = useState(null)
+  const [fotoTSal2, setFotoTSal2]   = useState(null)
   const [fotoTracto, setFotoTracto] = useState(null)
 
   const canVerCalc = ['admin','contador'].includes(user?.rol)
@@ -98,19 +100,21 @@ export default function ModalTicket({ onClose, onSaved }) {
   }
 
   async function handleSave() {
-    if (!bid) return toast('Ticket ID requerido', 'err')
+    if (!bid) return toast('Folio 1 requerido', 'err')
+    if (tipo === 'full' && !bid2) return toast('Folio 2 requerido para viaje Full', 'err')
     if (!m1 || !km) return toast('M³ y KM requeridos', 'err')
     if (!camionId) return toast('Selecciona un camión de la flotilla', 'err')
     setSaving(true)
     try {
-      let urlTSal = null, urlTracto = null
+      let urlTSal = null, urlTSal2 = null, urlTracto = null
       if (fotoTSal)   urlTSal   = await uploadFoto(fotoTSal,   `tickets/${bid}`)
+      if (fotoTSal2)  urlTSal2  = await uploadFoto(fotoTSal2,  `tickets/${bid2||bid}`)
       if (fotoTracto) urlTracto = await uploadFoto(fotoTracto, `tickets/${bid}`)
 
       const dest = destinos.find(d => d.id === origenDestId)
 
       await addViaje({
-        id: bid, tipo,
+        id: bid, folio2: tipo === 'full' ? bid2 : null, tipo,
         tracto: tracto.toUpperCase() || '—',
         gondola1: g1.toUpperCase() || '-',
         gondola2: tipo === 'full' ? g2.toUpperCase() : null,
@@ -128,6 +132,7 @@ export default function ModalTicket({ onClose, onSaved }) {
         agremiado_id: agremiadoId || null,
         foto_ticket_salida: !!urlTSal, foto_tracto: !!urlTracto,
         foto_ticket_salida_url: urlTSal, foto_tracto_url: urlTracto,
+        foto_ticket2_url: urlTSal2 || null,
         notas,
       })
       toast(`Ticket ${bid} registrado ✓`, 'ok')
@@ -193,14 +198,25 @@ export default function ModalTicket({ onClose, onSaved }) {
         <div className="sdv">Datos del ticket</div>
         <div className="row2">
           <div className="fg">
-            <label>Ticket ID</label>
+            <label>Folio Ticket {tipo === 'full' ? '1 (Gondola 1)' : ''}</label>
             <div style={{ display: 'flex', gap: 6 }}>
-              <input value={bid} onChange={e => setBid(e.target.value)} placeholder="2305238390016" style={{ flex: 1 }} />
+              <input value={bid} onChange={e => setBid(e.target.value)} placeholder="2605258380001" style={{ flex: 1 }} />
               <button type="button" className="btn btn-out" style={{ padding: '0 10px', flexShrink: 0 }} onClick={startScanner}>
                 <i className="ti ti-barcode" style={{ fontSize: 16 }} />
               </button>
             </div>
           </div>
+          {tipo === 'full' && (
+            <div className="fg">
+              <label>Folio Ticket 2 (Gondola 2)</label>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <input value={bid2} onChange={e => setBid2(e.target.value)} placeholder="2605258380002" style={{ flex: 1 }} />
+                <button type="button" className="btn btn-out" style={{ padding: '0 10px', flexShrink: 0 }} onClick={startScanner}>
+                  <i className="ti ti-barcode" style={{ fontSize: 16 }} />
+                </button>
+              </div>
+            </div>
+          )}
           <div className="fg">
             <label>Estimación <span style={{ fontWeight: 400, fontSize: 9, textTransform: 'none', letterSpacing: 0, color: 'var(--muted)' }}>(opcional)</span></label>
             <select value={estId} onChange={e => setEstId(e.target.value)}>
@@ -254,7 +270,8 @@ export default function ModalTicket({ onClose, onSaved }) {
 
         {/* FOTOS */}
         <div className="sdv">Documentos</div>
-        <FotoSlot label="Foto ticket de salida" onCapture={setFotoTSal} />
+        <FotoSlot label={tipo === 'full' ? 'Foto Ticket 1 (Gondola 1)' : 'Foto ticket de salida'} onCapture={setFotoTSal} />
+        {tipo === 'full' && <FotoSlot label="Foto Ticket 2 (Gondola 2)" onCapture={setFotoTSal2} />}
         <FotoSlot label="Foto del tracto / unidad" icon="truck" onCapture={setFotoTracto} />
 
         <div className="fg" style={{ marginTop: 8 }}>

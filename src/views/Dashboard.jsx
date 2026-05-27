@@ -6,7 +6,7 @@ import ModalLlegada from '../components/ModalLlegada'
 import ModalPago from '../components/ModalPago'
 import ModalConciliacion from '../components/ModalConciliacion'
 
-export default function Dashboard({ onNewTicket }) {
+export default function Dashboard({ onNewTicket, searchQ = '' }) {
   const { viajes, estimaciones, pagos, vCobro, vPago, vUtil, vM3, fmt, mandarAPago, perm } = useApp()
   const [tab, setTab] = useState('atencion')
   const [llegadaV, setLlegadaV] = useState(null)
@@ -18,9 +18,15 @@ export default function Dashboard({ onNewTicket }) {
   const p = perm() || {}
 
   // DASH 1: REQUIEREN ATENCIÓN
-  const conProblema = viajes.filter(v =>
-    v.estado !== 'cerrado' && (!v.foto_ticket_salida || !v.foto_tracto || v.estado === 'abierto' || !v.operador || v.operador === '—')
-  )
+  const conProblema = viajes.filter(v => {
+    if (v.estado === 'cerrado') return false
+    if (!(!v.foto_ticket_salida || !v.foto_tracto || v.estado === 'abierto' || !v.operador || v.operador === '—')) return false
+    if (searchQ) {
+      const sq = searchQ.toLowerCase()
+      if (!(v.id + v.tracto + v.operador + (v.gondola1||'')).toLowerCase().includes(sq)) return false
+    }
+    return true
+  })
 
   // DASH 2: PENDIENTES
   const pendConcil = viajes.filter(v => v.estado === 'pendiente_conciliar')

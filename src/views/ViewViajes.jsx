@@ -6,7 +6,7 @@ import Pill from '../components/Pill'
 import ModalLlegada from '../components/ModalLlegada'
 import ModalPago from '../components/ModalPago'
 
-export default function ViewViajes({ onNewTicket }) {
+export default function ViewViajes({ onNewTicket, searchQ = '' }) {
   const { viajes, estimaciones, vCobro, vPago, vUtil, vM3, fmt, reabrirViaje, perm } = useApp()
   const [fEst, setFEst]       = useState('')
   const [fStatus, setFStatus] = useState('')
@@ -23,9 +23,9 @@ export default function ViewViajes({ onNewTicket }) {
     if (fEst    && v.estimacion_id !== fEst) return false
     if (fStatus && v.estado !== fStatus) return false
     if (fFecha  && v.fecha_salida !== fFecha) return false
-    if (q) {
-      const s = q.toLowerCase()
-      if (!(v.id + v.tracto + v.operador + (v.gondola1||'') + (v.estimacion_id||'')).toLowerCase().includes(s)) return false
+    const busqueda = (q || searchQ).toLowerCase()
+    if (busqueda) {
+      if (!(v.id + v.tracto + v.operador + (v.gondola1||'') + (v.gondola2||'') + (v.estimacion_id||'') + (v.origen||'') + (v.destino||'')).toLowerCase().includes(busqueda)) return false
     }
     return true
   })

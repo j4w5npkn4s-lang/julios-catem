@@ -25,6 +25,7 @@ function AppInner() {
   const toast = useToast()
   const [view, setView]         = useState(null)
   const [showTicket, setShowTicket] = useState(false)
+  const [searchQ, setSearchQ]   = useState('')
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: 'var(--muted)' }}>
@@ -48,11 +49,13 @@ function AppInner() {
 
   const canAddTicket = ['admin', 'checador'].includes(user.rol)
 
+  function handleNav(v) { setView(v); setSearchQ('') }
+
   function renderView() {
     switch (cur) {
       case 'home':       return user.rol === 'aux_contador' ? <HomeAuxContador /> : <HomeChecador onNewTicket={() => setShowTicket(true)} />
-      case 'dash':       return <Dashboard onNewTicket={() => setShowTicket(true)} />
-      case 'viajes':     return <ViewViajes onNewTicket={() => setShowTicket(true)} />
+      case 'dash':       return <Dashboard onNewTicket={() => setShowTicket(true)} searchQ={searchQ} />
+      case 'viajes':     return <ViewViajes onNewTicket={() => setShowTicket(true)} searchQ={searchQ} />
       case 'flotilla':   return <ViewFlotilla />
       case 'agremiados': return <ViewAgremiados />
       case 'est':        return <ViewEstimaciones />
@@ -66,14 +69,18 @@ function AppInner() {
 
   return (
     <div className="app">
-      <Sidebar current={cur} onChange={setView} badges={badges} />
+      <Sidebar current={cur} onChange={handleNav} badges={badges} />
       <div className="main">
         <div className="topbar">
           <div className="topbar-title">{TITLES[cur] || cur}</div>
           {cur !== 'home' && (
             <div className="tsearch">
               <i className="ti ti-search tsearch-ico" />
-              <input placeholder="Ticket ID, placa, operador..." />
+              <input
+                placeholder="Ticket ID, placa, operador..."
+                value={searchQ}
+                onChange={e => setSearchQ(e.target.value)}
+              />
             </div>
           )}
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>

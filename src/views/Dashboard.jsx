@@ -13,7 +13,7 @@ export default function Dashboard({ onNewTicket }) {
   const [showConcil, setShowConcil] = useState(false)
   const [selPago, setSelPago]   = useState(new Set())
 
-  const p = perm()
+  const p = perm() || {}
 
   // DASH 1: REQUIEREN ATENCIÓN
   const conProblema = useMemo(() => viajes.filter(v =>

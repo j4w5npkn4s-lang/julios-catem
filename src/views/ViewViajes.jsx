@@ -13,7 +13,7 @@ export default function ViewViajes({ onNewTicket }) {
   const [llegadaV, setLlegadaV] = useState(null)
   const [pagoV, setPagoV]     = useState(null)
 
-  const p = perm()
+  const p = perm() || {}
 
   const filtered = useMemo(() => viajes.filter(v => {
     if (fEst    && v.estimacion_id !== fEst) return false

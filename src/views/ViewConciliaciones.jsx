@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useApp } from '../lib/AppContext'
+import { supabase } from '../lib/supabase'
 import Pill from '../components/Pill'
 import ModalConciliacion from '../components/ModalConciliacion'
 import FotoSlot from '../components/FotoSlot'
@@ -12,7 +13,7 @@ export default function ViewConciliaciones() {
   const [podFile, setPodFile]   = useState({})
   const [closing, setClosing]   = useState(null)
 
-  const p = perm()
+  const p = perm() || {}
 
   async function handleCerrar(c) {
     try {

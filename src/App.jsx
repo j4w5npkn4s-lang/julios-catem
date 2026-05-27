@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { AppProvider, useApp } from './lib/AppContext'
 import { ToastProvider, useToast } from './components/Toast'
 import Sidebar from './components/Sidebar'
@@ -47,16 +47,11 @@ function AppInner() {
   const cur = view || defaultView[user.rol] || 'dash'
 
   // Badges
-  const badges = useMemo(() => {
-    const abiertos   = viajes.filter(v => v.estado === 'abierto').length
-    const pendConcil = viajes.filter(v => v.estado === 'pendiente_conciliar').length
-    const pendPago   = viajes.filter(v => v.estado === 'pendiente_pago').length
-    return {
-      viajes:  abiertos + pendConcil > 0 ? abiertos + pendConcil : 0,
-      concil:  pendConcil > 0 ? pendConcil : 0,
-      pagos:   pendPago > 0 ? pendPago : 0,
-    }
-  }, [viajes])
+  const badges = {
+    viajes:  (viajes.filter(v => v.estado === 'abierto').length + viajes.filter(v => v.estado === 'pendiente_conciliar').length) || 0,
+    concil:  viajes.filter(v => v.estado === 'pendiente_conciliar').length || 0,
+    pagos:   viajes.filter(v => v.estado === 'pendiente_pago').length || 0,
+  }
 
   const views = {
     home:     user.rol === 'aux_contador' ? <HomeAuxContador /> : <HomeChecador onNewTicket={() => setShowTicket(true)} />,

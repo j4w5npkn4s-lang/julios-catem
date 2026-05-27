@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import ModalDetallePago from '../components/ModalDetallePago'
 import ModalPago from '../components/ModalPago'
+import ModalDetalleViaje from '../components/ModalDetalleViaje'
 import { useApp } from '../lib/AppContext'
 import Pill from '../components/Pill'
 import { useToast } from '../components/Toast'
@@ -16,6 +17,7 @@ export function ViewPagos() {
   const [pagoVs, setPagoVs]         = useState(null)
   const [tab, setTab]               = useState('pendientes')
   const [detallePago, setDetallePago] = useState(null)
+  const [detalleViaje, setDetalleViaje] = useState(null)
   const p = perm()
 
 
@@ -87,16 +89,7 @@ export function ViewPagos() {
         </select>
         <span style={{ fontSize:11, color:'var(--muted)' }}>{vsFiltrados.length} viaje(s)</span>
         <div style={{ flex:1 }} />
-        {selec.size > 0 && p.canPagar && (
-          <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-            <span style={{ fontSize:11, color:'var(--muted)' }}>
-              {selec.size} selec. · <span style={{ color:'var(--pago)', fontFamily:"'Space Mono',monospace" }}>{fmt(totalPago)}</span>
-            </span>
-            <button className="btn btn-ok btn-sm" onClick={() => setPagoVs(selecViajes)}>
-              <i className="ti ti-cash" />Pagar seleccionados
-            </button>
-          </div>
-        )}
+
       </div>
 
       {/* Tabla */}
@@ -115,8 +108,8 @@ export function ViewPagos() {
               {vsFiltrados.length ? vsFiltrados.map(v => {
                 const fb = fotosBadge(v)
                 return (
-                  <tr key={v.id} className="tr">
-                    <td><input type="checkbox" checked={selec.has(v.id)} onChange={() => toggleSelec(v.id)} style={{accentColor:'var(--acc)'}} /></td>
+                  <tr key={v.id} className="tr" onClick={() => setDetalleViaje(v)}>
+                    <td onClick={e => e.stopPropagation()}><input type="checkbox" checked={selec.has(v.id)} onChange={() => toggleSelec(v.id)} style={{accentColor:'var(--acc)'}} /></td>
                     <td><span className="mono" style={{ color:'var(--acc)' }}>{v.id}</span></td>
                     <td style={{ fontSize:10 }}>{getNombreAgremiado(v.agremiado_id)}</td>
                     <td><b>{v.tracto}</b></td>
@@ -156,6 +149,7 @@ export function ViewPagos() {
       {tab === 'historial' && <HistorialPagos onDetalle={setDetallePago} />}
 
       {detallePago && <ModalDetallePago pago={detallePago} onClose={() => setDetallePago(null)} />}
+      {detalleViaje && <ModalDetalleViaje viaje={detalleViaje} onClose={() => setDetalleViaje(null)} />}
     </div>
   )
 }

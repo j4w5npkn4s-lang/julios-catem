@@ -9,7 +9,7 @@ const NAV = [
   { id: 'agremiados', ico: 'users-group',      label: 'Agremiados',       roles: ['admin','contador','supervisor'] },
   { id: 'est',        ico: 'file-invoice',     label: 'Estimaciones',     roles: ['admin','contador','supervisor'] },
   { id: 'pagos',      ico: 'cash',             label: 'Pagos',            roles: ['admin','contador'] },
-  { id: 'reportes',   ico: 'chart-bar',        label: 'Reportes',         roles: ['admin','contador'] },
+  { id: 'reportes',   ico: 'chart-bar',        label: 'Reportes',         roles: ['admin','contador','supervisor'] },
   { id: 'config',     ico: 'settings',         label: 'Configuración',    roles: ['admin'] },
   { id: 'usuarios',   ico: 'users',            label: 'Usuarios',         roles: ['admin'] },
 ]

@@ -281,17 +281,28 @@ export function ViewReportes() {
   const { viajes, vM3 } = useApp()
   const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0])
   const [texto, setTexto] = useState('')
+  const [generando, setGenerando] = useState(false)
 
-  function generar() {
-    const vs = viajes.filter(v => v.fecha_salida === fecha)
-    if (!vs.length) { setTexto('Sin viajes para el ' + fecha); return }
+  const meses = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
+
+  function getFStr(f) {
+    const [y,m,d] = f.split('-')
+    return `${d} ${meses[parseInt(m)]} ${y}`
+  }
+
+  function getDatos() {
+    const vs  = viajes.filter(v => v.fecha_salida === fecha)
     const sen = vs.filter(v => v.tipo === 'sencillo')
     const ful = vs.filter(v => v.tipo === 'full')
-    const m3Sen = sen.reduce((a, v) => a + vM3(v), 0)
-    const m3Ful = ful.reduce((a, v) => a + vM3(v), 0)
-    const meses = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
-    const [y,m,d] = fecha.split('-')
-    const fStr = `${d} ${meses[parseInt(m)]} ${y}`
+    const m3Sen = sen.reduce((a,v) => a+vM3(v), 0)
+    const m3Ful = ful.reduce((a,v) => a+vM3(v), 0)
+    return { vs, sen, ful, m3Sen, m3Ful, total: vs.length, totalM3: m3Sen+m3Ful }
+  }
+
+  function generar() {
+    const { vs, sen, ful, m3Sen, m3Ful } = getDatos()
+    if (!vs.length) { setTexto('Sin viajes para el ' + fecha); return }
+    const fStr = getFStr(fecha)
     const t = [
       '🚛 *REPORTE DE VIAJES*',
       `📅 *${fStr}*`,
@@ -307,9 +318,156 @@ export function ViewReportes() {
       '─────────────────',
       '*TOTAL*',
       `• Viajes: *${vs.length}*`,
-      `• M³: *${(m3Sen + m3Ful).toFixed(2)}*`,
+      `• M³: *${(m3Sen+m3Ful).toFixed(2)}*`,
     ].join('\n')
     setTexto(t)
+  }
+
+  async function generarImagenYWhatsApp() {
+    const { vs, sen, ful, m3Sen, m3Ful } = getDatos()
+    if (!vs.length) { alert('Sin viajes para esa fecha'); return }
+    setGenerando(true)
+    try {
+      const fStr = getFStr(fecha)
+      const canvas = document.createElement('canvas')
+      canvas.width  = 800
+      canvas.height = 560
+      const ctx = canvas.getContext('2d')
+
+      // Fondo oscuro degradado
+      const grad = ctx.createLinearGradient(0, 0, 800, 560)
+      grad.addColorStop(0, '#111318')
+      grad.addColorStop(1, '#1A1D24')
+      ctx.fillStyle = grad
+      ctx.fillRect(0, 0, 800, 560)
+
+      // Borde naranja arriba
+      ctx.fillStyle = '#F59E0B'
+      ctx.fillRect(0, 0, 800, 5)
+
+      // Logo como imagen
+      await new Promise((resolve) => {
+        const img = new Image()
+        img.crossOrigin = 'anonymous'
+        img.onload = () => {
+          // Círculo recortado para logo
+          ctx.save()
+          ctx.beginPath()
+          ctx.arc(72, 72, 48, 0, Math.PI*2)
+          ctx.clip()
+          ctx.drawImage(img, 24, 24, 96, 96)
+          ctx.restore()
+          resolve()
+        }
+        img.onerror = resolve
+        img.src = '/icon-192.png'
+      })
+
+      // Nombre app
+      ctx.fillStyle = '#F59E0B'
+      ctx.font = 'bold 22px "Space Mono", monospace'
+      ctx.fillText('JULIOS CATEM · JSV', 140, 52)
+      ctx.fillStyle = '#8A8F9E'
+      ctx.font = '14px DM Sans, sans-serif'
+      ctx.fillText('Sistema de Gestión Logística', 140, 76)
+
+      // Fecha
+      ctx.fillStyle = '#FFFFFF'
+      ctx.font = 'bold 28px DM Sans, sans-serif'
+      ctx.fillText(`REPORTE DE VIAJES · ${fStr}`, 32, 145)
+
+      // Separador
+      ctx.fillStyle = '#2E3340'
+      ctx.fillRect(32, 160, 736, 2)
+
+      // Sencillos
+      ctx.fillStyle = '#F59E0B'
+      ctx.font = 'bold 16px DM Sans'
+      ctx.fillText('SENCILLOS', 32, 210)
+      ctx.fillStyle = '#FFFFFF'
+      ctx.font = 'bold 64px "Space Mono"'
+      ctx.fillText(sen.length, 32, 285)
+      ctx.fillStyle = '#8A8F9E'
+      ctx.font = '16px DM Sans'
+      ctx.fillText('unidades', 32, 312)
+      ctx.fillStyle = '#60A5FA'
+      ctx.font = 'bold 32px "Space Mono"'
+      ctx.fillText(m3Sen.toFixed(1) + ' m³', 32, 358)
+
+      // Separador vertical
+      ctx.fillStyle = '#2E3340'
+      ctx.fillRect(300, 190, 2, 190)
+
+      // Full
+      ctx.fillStyle = '#A78BFA'
+      ctx.font = 'bold 16px DM Sans'
+      ctx.fillText('FULL', 340, 210)
+      ctx.fillStyle = '#FFFFFF'
+      ctx.font = 'bold 64px "Space Mono"'
+      ctx.fillText(ful.length, 340, 285)
+      ctx.fillStyle = '#8A8F9E'
+      ctx.font = '16px DM Sans'
+      ctx.fillText('unidades', 340, 312)
+      ctx.fillStyle = '#A78BFA'
+      ctx.font = 'bold 32px "Space Mono"'
+      ctx.fillText(m3Ful.toFixed(1) + ' m³', 340, 358)
+
+      // Separador vertical
+      ctx.fillStyle = '#2E3340'
+      ctx.fillRect(580, 190, 2, 190)
+
+      // Total
+      ctx.fillStyle = '#22C55E'
+      ctx.font = 'bold 16px DM Sans'
+      ctx.fillText('TOTAL', 620, 210)
+      ctx.fillStyle = '#22C55E'
+      ctx.font = 'bold 64px "Space Mono"'
+      ctx.fillText(vs.length, 620, 285)
+      ctx.fillStyle = '#8A8F9E'
+      ctx.font = '16px DM Sans'
+      ctx.fillText('viajes', 620, 312)
+      ctx.fillStyle = '#22C55E'
+      ctx.font = 'bold 32px "Space Mono"'
+      ctx.fillText((m3Sen+m3Ful).toFixed(1)+' m³', 620, 358)
+
+      // Separador
+      ctx.fillStyle = '#2E3340'
+      ctx.fillRect(32, 395, 736, 2)
+
+      // Pie
+      ctx.fillStyle = '#5A5F6E'
+      ctx.font = '13px DM Sans'
+      ctx.fillText(`Generado por JSV Tracking · ${new Date().toLocaleString('es-MX')}`, 32, 430)
+
+      // Borde naranja abajo
+      ctx.fillStyle = '#F59E0B'
+      ctx.fillRect(0, 555, 800, 5)
+
+      // Descargar imagen
+      const dataUrl = canvas.toDataURL('image/png')
+      const a = document.createElement('a')
+      a.href = dataUrl
+      a.download = `reporte-jsv-${fecha}.png`
+      a.click()
+
+      // Esperar un momento y abrir WhatsApp con texto
+      await new Promise(r => setTimeout(r, 1000))
+      const txt = `🚛 *REPORTE DE VIAJES JSV*
+📅 *${fStr}*
+
+*SENCILLOS:* ${sen.length} uds · ${m3Sen.toFixed(2)} m³
+*FULL:* ${ful.length} uds · ${m3Ful.toFixed(2)} m³
+
+─────────────────
+*TOTAL:* ${vs.length} viajes · ${(m3Sen+m3Ful).toFixed(2)} m³
+
+_Generado por JSV Tracking_`
+      window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank')
+
+    } catch(err) {
+      alert('Error: ' + err.message)
+    }
+    setGenerando(false)
   }
 
   function enviarWA() {
@@ -318,11 +476,10 @@ export function ViewReportes() {
   }
 
   async function copiar() {
-    try {
-      await navigator.clipboard.writeText(texto)
-    } catch {
+    try { await navigator.clipboard.writeText(texto) }
+    catch {
       const ta = document.createElement('textarea')
-      ta.value = texto; ta.style.position = 'fixed'; ta.style.opacity = '0'
+      ta.value = texto; ta.style.position='fixed'; ta.style.opacity='0'
       document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta)
     }
     alert('✓ Copiado')
@@ -354,8 +511,12 @@ export function ViewReportes() {
           {texto || 'Selecciona una fecha y presiona Generar'}
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button className="btn btn-ok" style={{ flex: 1, justifyContent: 'center', padding: 12 }} onClick={enviarWA}>
-            <i className="ti ti-brand-whatsapp" style={{ fontSize: 16 }} />Abrir en WhatsApp
+          <button className="btn btn-ok" style={{ flex: 1, justifyContent: 'center', padding: 13 }} onClick={generarImagenYWhatsApp} disabled={generando}>
+            <i className="ti ti-photo" style={{ fontSize: 16 }} />
+            {generando ? 'Generando imagen...' : '📸 Imagen + WhatsApp'}
+          </button>
+          <button className="btn btn-out btn-sm" onClick={enviarWA} title="Solo texto sin imagen">
+            <i className="ti ti-brand-whatsapp" />Solo texto
           </button>
           <button className="btn btn-out btn-sm" onClick={copiar}><i className="ti ti-copy" />Copiar</button>
         </div>

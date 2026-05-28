@@ -2,14 +2,16 @@ import { useRef, useState } from 'react'
 
 export default function FotoSlot({ label, icon = 'camera', onCapture, accept = 'image/*', done: externalDone }) {
   const inputRef = useRef(null)
-  const [done, setDone]       = useState(false)
-  const [preview, setPreview] = useState(null)
+  const [done, setDone]         = useState(false)
+  const [preview, setPreview]   = useState(null)
   const [fileName, setFileName] = useState('')
 
   const isDone = externalDone !== undefined ? externalDone : done
+  // Solo usar capture=environment para imágenes (no PDFs)
+  const isImageOnly = !accept.includes('pdf') && !accept.includes('.pdf')
 
   function handleClick() {
-    if (inputRef.current) inputRef.current.click()
+    inputRef.current?.click()
   }
 
   function handleChange(e) {
@@ -23,17 +25,13 @@ export default function FotoSlot({ label, icon = 'camera', onCapture, accept = '
     onCapture?.(file)
   }
 
-  const isAndroid = /Android/i.test(navigator.userAgent)
-  const isIOS     = /iPhone|iPad/i.test(navigator.userAgent)
-  const isMobile  = isAndroid || isIOS
-
   return (
     <div className={`fslot${isDone ? ' done' : ''}`} onClick={handleClick}>
       <input
         ref={inputRef}
         type="file"
         accept={accept}
-        capture={isMobile ? 'environment' : undefined}
+        {...(isImageOnly ? { capture: 'environment' } : {})}
         onChange={handleChange}
         style={{ display: 'none' }}
       />

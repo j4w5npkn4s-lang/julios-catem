@@ -25,7 +25,6 @@ export default function ModalEditarViaje({ viaje: v, onClose, onSaved }) {
   const [fLleg, setFLleg]     = useState(v.fecha_llegada || '')
   const [hLleg, setHLleg]     = useState(v.hora_llegada || '')
   const [operador, setOper]   = useState(v.operador || '')
-  const [origenDestId, setOD] = useState('')
   const [origen, setOrigen]   = useState(v.origen || '')
   const [destino, setDestino] = useState(v.destino || '')
   const [agremiadoId, setAgId]= useState(v.agremiado_id || '')
@@ -37,13 +36,6 @@ export default function ModalEditarViaje({ viaje: v, onClose, onSaved }) {
   const [fotoTSal, setFotoTSal]   = useState(null)
   const [fotoTracto, setFotoTracto] = useState(null)
   const [fotoLleg, setFotoLleg]   = useState(null)
-
-  function handleDestinoChange(id) {
-    setOD(id)
-    if (!id) return
-    const d = destinos.find(x => x.id === id)
-    if (d) { setOrigen(d.origen); setDestino(d.destino); setKm(String(d.km)) }
-  }
 
   async function handleSave() {
     if (!tracto.trim()) return toast('Placa tracto requerida', 'err')
@@ -154,20 +146,27 @@ export default function ModalEditarViaje({ viaje: v, onClose, onSaved }) {
 
       {/* RUTA */}
       <div className="sdv">Ruta</div>
-      <div className="fg">
-        <label>Seleccionar ruta predefinida <span style={{ fontWeight:400, fontSize:9, textTransform:'none', letterSpacing:0, color:'var(--muted)' }}>(opcional — sobreescribe origen/destino/km)</span></label>
-        <select value={origenDestId} onChange={e => handleDestinoChange(e.target.value)}>
-          <option value="">— Selecciona ruta —</option>
-          {destinos.filter(d => d.activo !== false).map(d => (
-            <option key={d.id} value={d.id}>{d.origen} → {d.destino} ({d.km} km)</option>
-          ))}
-        </select>
+      <div className="row2">
+        <div className="fg">
+          <label>Origen</label>
+          <select value={origen} onChange={e => { setOrigen(e.target.value); setDestino(''); setKm('') }}>
+            <option value="">— Selecciona origen —</option>
+            {[...new Set(destinos.filter(d=>d.activo!==false).map(d=>d.origen))].map(o => <option key={o} value={o}>{o}</option>)}
+          </select>
+        </div>
+        <div className="fg">
+          <label>Destino</label>
+          <select value={destino} onChange={e => {
+            setDestino(e.target.value)
+            const d = destinos.find(x => x.origen === origen && x.destino === e.target.value && x.activo!==false)
+            if (d?.km) setKm(String(d.km))
+          }} disabled={!origen}>
+            <option value="">— Selecciona destino —</option>
+            {destinos.filter(d=>d.activo!==false && d.origen===origen).map(d => <option key={d.id} value={d.destino}>{d.destino} ({d.km} km)</option>)}
+          </select>
+        </div>
       </div>
-      <div className="row3">
-        <div className="fg"><label>Origen</label><input value={origen} onChange={e => setOrigen(e.target.value)} /></div>
-        <div className="fg"><label>Destino</label><input value={destino} onChange={e => setDestino(e.target.value)} /></div>
-        <div className="fg"><label>KM</label><input type="number" value={km} onChange={e => setKm(e.target.value)} /></div>
-      </div>
+      <div className="fg"><label>KM <span style={{ fontWeight:400, fontSize:9, color:'var(--muted)', textTransform:'none', letterSpacing:0 }}>(se autorrellena al seleccionar ruta)</span></label><input type="number" value={km} onChange={e => setKm(e.target.value)} /></div>
       <div className="fg"><label>Material</label><input value={mat} onChange={e => setMat(e.target.value)} /></div>
 
       {/* FECHAS */}

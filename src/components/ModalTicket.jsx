@@ -16,7 +16,8 @@ export default function ModalTicket({ onClose, onSaved }) {
   const [bid, setBid]         = useState('')
   const [bid2, setBid2]       = useState('')
   const [estId, setEstId]     = useState('')
-  const [origenDestId, setOD] = useState('')  // destino id (origen+destino+km)
+  const [origenSel, setOrigenSel] = useState('')
+  const [destinoSel, setDestinoSel] = useState('')
   const [camionId, setCamionId] = useState('') // flotilla id
   const [mat, setMat]         = useState('')
   const [fSal, setFSal]       = useState(today())
@@ -59,11 +60,23 @@ export default function ModalTicket({ onClose, onSaved }) {
     setAgId(cam.agremiado_id || '')
   }
 
-  // When origen/destino is selected, autofill km
-  function handleDestinoChange(id) {
-    setOD(id)
-    if (!id) { setKm(''); return }
-    const d = destinos.find(x => x.id === id)
+  // Origens únicos
+  const origenes = [...new Set(destinos.filter(d=>d.activo!==false).map(d=>d.origen))]
+  // Destinos filtrados según origen seleccionado
+  const destinosFiltrados = origenSel
+    ? destinos.filter(d => d.activo!==false && d.origen === origenSel)
+    : destinos.filter(d => d.activo!==false)
+
+  function handleOrigenChange(val) {
+    setOrigenSel(val)
+    setDestinoSel('')
+    setKm('')
+  }
+
+  function handleDestinoChange(val) {
+    setDestinoSel(val)
+    if (!val || !origenSel) { setKm(''); return }
+    const d = destinos.find(x => x.origen === origenSel && x.destino === val && x.activo!==false)
     if (d?.km) setKm(String(d.km))
   }
 
@@ -111,8 +124,6 @@ export default function ModalTicket({ onClose, onSaved }) {
       if (fotoTSal2)  urlTSal2  = await uploadFoto(fotoTSal2,  `tickets/${bid2||bid}`)
       if (fotoTracto) urlTracto = await uploadFoto(fotoTracto, `tickets/${bid}`)
 
-      const dest = destinos.find(d => d.id === origenDestId)
-
       await addViaje({
         id: bid, folio2: tipo === 'full' ? bid2 : null, tipo,
         tracto: tracto.toUpperCase() || '—',
@@ -122,11 +133,11 @@ export default function ModalTicket({ onClose, onSaved }) {
         m3_2: tipo === 'full' ? (parseFloat(m2)||0) : 0,
         km: kmN,
         estimacion_id: estId || null,
-        origen: dest?.origen || null,
-        destino: dest?.destino || null,
+        origen: origenSel || null,
+        destino: destinoSel || null,
         estado: 'abierto',
         material: mat || '—',
-        mina: dest?.origen || null,
+        mina: origenSel || null,
         fecha_salida: fSal, hora_salida: hSal || null,
         operador: operador || '—',
         agremiado_id: agremiadoId || null,
@@ -241,14 +252,21 @@ export default function ModalTicket({ onClose, onSaved }) {
         </div>
 
         {/* ORIGEN / DESTINO */}
-        <div className="fg">
-          <label>Origen → Destino</label>
-          <select value={origenDestId} onChange={e => handleDestinoChange(e.target.value)}>
-            <option value="">— Selecciona ruta —</option>
-            {destinos.filter(d => d.activo !== false).map(d => (
-              <option key={d.id} value={d.id}>{d.origen} → {d.destino} ({d.km} km)</option>
-            ))}
-          </select>
+        <div className="row2">
+          <div className="fg">
+            <label>Origen</label>
+            <select value={origenSel} onChange={e => handleOrigenChange(e.target.value)}>
+              <option value="">— Selecciona origen —</option>
+              {origenes.map(o => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </div>
+          <div className="fg">
+            <label>Destino</label>
+            <select value={destinoSel} onChange={e => handleDestinoChange(e.target.value)} disabled={!origenSel}>
+              <option value="">— Selecciona destino —</option>
+              {destinosFiltrados.map(d => <option key={d.id} value={d.destino}>{d.destino} ({d.km} km)</option>)}
+            </select>
+          </div>
         </div>
         <div className="row2">
           <div className="fg"><label>KM</label><input type="number" value={km} onChange={e => setKm(e.target.value)} placeholder="384" /></div>

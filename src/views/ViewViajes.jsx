@@ -46,7 +46,7 @@ export default function ViewViajes({ onNewTicket, searchQ = '' }) {
           <option value="cerrado">Cerrado</option>
         </select>
         <input type="date" value={fFecha} onChange={e => setFFecha(e.target.value)} style={{ height: 28, fontSize: 11, padding: '0 7px', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text)' }} />
-        <input value={q} onChange={e => setQ(e.target.value)} placeholder="Buscar..." style={{ height: 28, fontSize: 11, padding: '0 9px', width: 180, background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text)' }} />
+
         <div style={{ flex: 1 }} />
         <span style={{ fontSize: 11, color: 'var(--muted)' }}>{filtered.length} resultado{filtered.length !== 1 ? 's' : ''}</span>
       </div>

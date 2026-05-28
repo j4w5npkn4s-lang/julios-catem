@@ -27,8 +27,64 @@ function AppInner() {
   const [showTicket, setShowTicket] = useState(false)
   const [searchQ, setSearchQ]   = useState('')
   const [refreshing, setRefreshing] = useState(false)
+  const [scanning, setScanning]     = useState(false)
+  const [scanStream, setScanStream]  = useState(null)
   const [pullStart, setPullStart]   = useState(0)
   const [pullDist, setPullDist]     = useState(0)
+
+  async function startTopScanner() {
+    if (!('BarcodeDetector' in window)) {
+      toast('Escáner no disponible — escribe el folio manualmente', 'warn')
+      return
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
+      })
+      setScanStream(stream)
+      setScanning(true)
+      await new Promise(r => setTimeout(r, 400))
+      const video = document.getElementById('top-scan-video')
+      if (!video) { stream.getTracks().forEach(t => t.stop()); return }
+      video.srcObject = stream
+      video.setAttribute('playsinline', true)
+      await video.play().catch(() => {})
+      const detector = new BarcodeDetector({ formats: ['code_128','code_39','ean_13','ean_8','itf','codabar'] })
+      let active = true
+      const scan = async () => {
+        if (!active) return
+        try {
+          if (video.readyState >= 2) {
+            const codes = await detector.detect(video)
+            if (codes.length > 0) {
+              setSearchQ(codes[0].rawValue)
+              active = false
+              stream.getTracks().forEach(t => t.stop())
+              setScanStream(null)
+              setScanning(false)
+              // Navigate to viajes view
+              setView('viajes')
+              toast('✓ Buscando: ' + codes[0].rawValue, 'ok')
+              return
+            }
+          }
+        } catch {}
+        if (active) setTimeout(scan, 200)
+      }
+      video.onloadedmetadata = () => scan()
+      setTimeout(scan, 1000)
+    } catch (err) {
+      setScanning(false)
+      if (err.name === 'NotAllowedError') toast('Permiso de cámara denegado', 'err')
+      else toast('Error al iniciar escáner: ' + err.message, 'err')
+    }
+  }
+
+  function stopTopScanner() {
+    scanStream?.getTracks().forEach(t => t.stop())
+    setScanStream(null)
+    setScanning(false)
+  }
 
   async function doRefresh() {
     setRefreshing(true)
@@ -94,13 +150,18 @@ function AppInner() {
         <div className="topbar">
           <div className="topbar-title">{TITLES[cur] || cur}</div>
           {cur !== 'home' && (
-            <div className="tsearch">
-              <i className="ti ti-search tsearch-ico" />
-              <input
-                placeholder="Ticket ID, placa, operador..."
-                value={searchQ}
-                onChange={e => setSearchQ(e.target.value)}
-              />
+            <div className="tsearch" style={{ display:'flex', gap:6, alignItems:'center' }}>
+              <div style={{ position:'relative', flex:1 }}>
+                <i className="ti ti-search tsearch-ico" />
+                <input
+                  placeholder="Ticket ID, placa, operador..."
+                  value={searchQ}
+                  onChange={e => setSearchQ(e.target.value)}
+                />
+              </div>
+              <button className="btn btn-out" style={{ padding:'0 8px', height:30, flexShrink:0 }} onClick={startTopScanner} title="Escanear código de barras">
+                <i className="ti ti-barcode" style={{ fontSize:16 }} />
+              </button>
             </div>
           )}
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -131,6 +192,23 @@ function AppInner() {
           {renderView()}
         </div>
       </div>
+            {/* SCANNER OVERLAY GLOBAL */}
+      {scanning && (
+        <div style={{ position:'fixed', inset:0, background:'#000', zIndex:9999, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
+          <div style={{ position:'relative', width:'100%', maxWidth:440 }}>
+            <video id="top-scan-video" autoPlay playsInline muted style={{ width:'100%', borderRadius:8, background:'#000' }} />
+            <div style={{ position:'absolute', inset:0, border:'2px solid var(--acc)', borderRadius:8, pointerEvents:'none' }}>
+              <div style={{ position:'absolute', left:'10%', right:'10%', height:2, background:'rgba(245,158,11,.8)', animation:'scan 1.5s ease-in-out infinite' }} />
+            </div>
+          </div>
+          <div style={{ color:'#fff', fontSize:13, marginTop:16 }}>Apunta al código de barras del ticket</div>
+          <button className="btn btn-danger" style={{ marginTop:16 }} onClick={stopTopScanner}>
+            <i className="ti ti-x" />Cancelar
+          </button>
+          <style>{`@keyframes scan { 0%,100%{top:15%} 50%{top:80%} }`}</style>
+        </div>
+      )}
+
       {showTicket && <ModalTicket onClose={() => setShowTicket(false)} onSaved={() => toast('Ticket registrado', 'ok')} />}
     </div>
   )

@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 
 export default function FotoSlot({ label, icon = 'camera', onCapture, accept = 'image/*', done: externalDone }) {
   const inputRef = useRef(null)
-  const [done, setDone] = useState(false)
+  const [done, setDone]       = useState(false)
   const [preview, setPreview] = useState(null)
   const [fileName, setFileName] = useState('')
 
@@ -17,12 +17,15 @@ export default function FotoSlot({ label, icon = 'camera', onCapture, accept = '
     if (!file) return
     setDone(true)
     setFileName(file.name)
-    // Preview
     const reader = new FileReader()
     reader.onload = ev => setPreview(ev.target.result)
     reader.readAsDataURL(file)
     onCapture?.(file)
   }
+
+  const isAndroid = /Android/i.test(navigator.userAgent)
+  const isIOS     = /iPhone|iPad/i.test(navigator.userAgent)
+  const isMobile  = isAndroid || isIOS
 
   return (
     <div className={`fslot${isDone ? ' done' : ''}`} onClick={handleClick}>
@@ -30,7 +33,7 @@ export default function FotoSlot({ label, icon = 'camera', onCapture, accept = '
         ref={inputRef}
         type="file"
         accept={accept}
-        capture={/Android|iPhone|iPad/i.test(navigator.userAgent) ? 'environment' : undefined}
+        capture={isMobile ? 'environment' : undefined}
         onChange={handleChange}
         style={{ display: 'none' }}
       />

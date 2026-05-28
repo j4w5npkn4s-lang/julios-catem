@@ -89,27 +89,74 @@ export default function ModalTicket({ onClose, onSaved }) {
 
   // Scanner
   async function startScanner() {
-    if (!('BarcodeDetector' in window)) { toast('Escáner no disponible en este navegador', 'warn'); return }
+    // Si no soporta BarcodeDetector, usar input file como fallback
+    if (!('BarcodeDetector' in window)) {
+      toast('Escáner no disponible — ingresa el folio manualmente', 'warn')
+      return
+    }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-      setScanStream(stream); setScanActive(true)
-      const video = document.getElementById('scan-video')
-      video.srcObject = stream; video.play()
-      const detector = new BarcodeDetector({ formats: ['code_128','code_39','ean_13','ean_8'] })
-      const scan = async () => {
-        try {
-          const codes = await detector.detect(video)
-          if (codes.length > 0) { setBid(codes[0].rawValue); stopScanner(); toast('Código: ' + codes[0].rawValue, 'ok'); return }
-        } catch {}
-        if (scanActive) requestAnimationFrame(scan)
+      // Pedir permiso primero
+      const perm = await navigator.permissions.query({ name: 'camera' }).catch(() => ({ state: 'prompt' }))
+
+      const constraints = {
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
       }
-      video.onloadedmetadata = () => requestAnimationFrame(scan)
-    } catch { toast('No se pudo acceder a la cámara', 'err') }
+      const stream = await navigator.mediaDevices.getUserMedia(constraints)
+      setScanStream(stream)
+      setScanActive(true)
+
+      // Esperar a que el video esté listo
+      await new Promise(r => setTimeout(r, 300))
+      const video = document.getElementById('scan-video')
+      if (!video) { stream.getTracks().forEach(t => t.stop()); return }
+      video.srcObject = stream
+      video.setAttribute('playsinline', true)
+      await video.play().catch(() => {})
+
+      const detector = new BarcodeDetector({ formats: ['code_128','code_39','ean_13','ean_8','itf','codabar','upc_a','upc_e'] })
+      let scanning = true
+
+      const scan = async () => {
+        if (!scanning) return
+        try {
+          if (video.readyState >= 2) {
+            const codes = await detector.detect(video)
+            if (codes.length > 0) {
+              setBid(codes[0].rawValue)
+              scanning = false
+              stream.getTracks().forEach(t => t.stop())
+              setScanStream(null)
+              setScanActive(false)
+              toast('✓ Código: ' + codes[0].rawValue, 'ok')
+              return
+            }
+          }
+        } catch {}
+        if (scanning) setTimeout(scan, 200)
+      }
+
+      video.onloadedmetadata = () => scan()
+      // Fallback si onloadedmetadata no dispara
+      setTimeout(scan, 1000)
+
+    } catch (err) {
+      setScanActive(false)
+      if (err.name === 'NotAllowedError') {
+        toast('Permiso de cámara denegado. Ve a Configuración del navegador y activa la cámara.', 'err')
+      } else {
+        toast('No se pudo iniciar el escáner: ' + err.message, 'err')
+      }
+    }
   }
 
   function stopScanner() {
     scanStream?.getTracks().forEach(t => t.stop())
-    setScanStream(null); setScanActive(false)
+    setScanStream(null)
+    setScanActive(false)
   }
 
   async function handleSave() {
@@ -160,7 +207,7 @@ export default function ModalTicket({ onClose, onSaved }) {
       {scanActive && (
         <div className="scanner-overlay">
           <div style={{ position: 'relative', width: '100%', maxWidth: 400 }}>
-            <video id="scan-video" autoPlay playsInline style={{ width: '100%', borderRadius: 8 }} />
+            <video id="scan-video" autoPlay playsInline muted style={{ width: '100%', borderRadius: 8, background: '#000' }} />
             <div style={{ position: 'absolute', inset: 0, border: '2px solid var(--acc)', borderRadius: 8, pointerEvents: 'none' }}>
               <div className="scanner-line" />
             </div>

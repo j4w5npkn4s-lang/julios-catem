@@ -83,8 +83,23 @@ export default function ModalPago({ viajes: viajesSelec, onClose, onSaved }) {
       <div className="row2">
         <div className="fg"><label>Fecha pago</label><input type="date" value={fecha} onChange={e => setFecha(e.target.value)} /></div>
         <div className="fg">
-          <label>Monto total ($)</label>
-          <input type="number" value={monto} onChange={e => setMonto(e.target.value)} placeholder="0.00" step="0.01" />
+          <label>Monto total (MXN)</label>
+          <div style={{ position:'relative' }}>
+            <span style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)', color:'var(--muted)', fontSize:13, fontWeight:600, pointerEvents:'none' }}>$</span>
+            <input
+              type="number"
+              value={monto}
+              onChange={e => setMonto(e.target.value)}
+              placeholder="0.00"
+              step="0.01"
+              style={{ paddingLeft: 22, fontFamily:"'Space Mono',monospace", fontSize:14, fontWeight:700 }}
+            />
+          </div>
+          {monto && !isNaN(parseFloat(monto)) && (
+            <div style={{ fontSize:11, color:'var(--ok)', marginTop:4, fontFamily:"'Space Mono',monospace" }}>
+              {new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(parseFloat(monto))}
+            </div>
+          )}
         </div>
       </div>
       <div className="fg"><label>Folio / Referencia</label><input value={folio} onChange={e => setFolio(e.target.value)} placeholder="REF-001" /></div>

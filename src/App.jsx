@@ -21,11 +21,31 @@ const TITLES = {
 }
 
 function AppInner() {
-  const { user, viajes, loading } = useApp()
+  const { user, viajes, loading, loadAll } = useApp()
   const toast = useToast()
   const [view, setView]         = useState(null)
   const [showTicket, setShowTicket] = useState(false)
   const [searchQ, setSearchQ]   = useState('')
+  const [refreshing, setRefreshing] = useState(false)
+  const [pullStart, setPullStart]   = useState(0)
+  const [pullDist, setPullDist]     = useState(0)
+
+  async function doRefresh() {
+    setRefreshing(true)
+    await loadAll()
+    setTimeout(() => setRefreshing(false), 600)
+  }
+
+  function onTouchStart(e) { setPullStart(e.touches[0].clientY) }
+  function onTouchMove(e) {
+    const dist = e.touches[0].clientY - pullStart
+    const el = e.currentTarget
+    if (dist > 0 && el.scrollTop === 0) setPullDist(Math.min(dist, 80))
+  }
+  async function onTouchEnd() {
+    if (pullDist > 60) doRefresh()
+    setPullDist(0)
+  }
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: 'var(--muted)' }}>
@@ -85,6 +105,9 @@ function AppInner() {
           )}
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <div className="sync-pill"><div className="sdot" /><span>Online</span></div>
+            <button className="btn btn-out btn-sm" onClick={() => loadAll()} title="Actualizar datos" style={{ padding: '0 8px', height: 28 }}>
+              <i className="ti ti-refresh" style={{ fontSize: 15 }} />
+            </button>
             {canAddTicket && (
               <button className="btn btn-acc btn-sm" onClick={() => setShowTicket(true)}>
                 <i className="ti ti-plus" />Ticket
@@ -92,7 +115,21 @@ function AppInner() {
             )}
           </div>
         </div>
-        <div className="content">{renderView()}</div>
+        <div className="content"
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+        >
+          {/* Pull to refresh indicator */}
+          {(pullDist > 10 || refreshing) && (
+            <div style={{ textAlign:'center', padding:'8px 0', fontSize:11, color:'var(--muted)', display:'flex', alignItems:'center', justifyContent:'center', gap:6, transition:'all .2s' }}>
+              <i className={`ti ti-refresh${refreshing?' spin':''}`} style={{ fontSize:16, animation: refreshing?'spin 1s linear infinite':undefined }} />
+              {refreshing ? 'Actualizando...' : pullDist > 60 ? 'Suelta para actualizar' : 'Jala para actualizar'}
+            </div>
+          )}
+          <style>{'.spin{animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}'}</style>
+          {renderView()}
+        </div>
       </div>
       {showTicket && <ModalTicket onClose={() => setShowTicket(false)} onSaved={() => toast('Ticket registrado', 'ok')} />}
     </div>

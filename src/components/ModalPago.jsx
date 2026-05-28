@@ -84,22 +84,15 @@ export default function ModalPago({ viajes: viajesSelec, onClose, onSaved }) {
         <div className="fg"><label>Fecha pago</label><input type="date" value={fecha} onChange={e => setFecha(e.target.value)} /></div>
         <div className="fg">
           <label>Monto total (MXN)</label>
-          <div style={{ position:'relative' }}>
-            <span style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)', color:'var(--muted)', fontSize:13, fontWeight:600, pointerEvents:'none' }}>$</span>
-            <input
-              type="number"
-              value={monto}
-              onChange={e => setMonto(e.target.value)}
-              placeholder="0.00"
-              step="0.01"
-              style={{ paddingLeft: 22, fontFamily:"'Space Mono',monospace", fontSize:14, fontWeight:700 }}
-            />
-          </div>
-          {monto && !isNaN(parseFloat(monto)) && (
-            <div style={{ fontSize:11, color:'var(--ok)', marginTop:4, fontFamily:"'Space Mono',monospace" }}>
-              {new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(parseFloat(monto))}
-            </div>
-          )}
+          <input
+            type="text"
+            value={monto ? '$' + parseFloat(monto).toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2}) : ''}
+            onFocus={e => { e.target.value = monto; e.target.type = 'number' }}
+            onBlur={e => { const v = parseFloat(e.target.value); if (!isNaN(v)) setMonto(v.toFixed(2)); e.target.type = 'text' }}
+            onChange={e => setMonto(e.target.value)}
+            placeholder="$0.00"
+            style={{ fontFamily:"'Space Mono',monospace", fontSize:14, fontWeight:700, color:'var(--ok)' }}
+          />
         </div>
       </div>
       <div className="fg"><label>Folio / Referencia</label><input value={folio} onChange={e => setFolio(e.target.value)} placeholder="REF-001" /></div>

@@ -20,16 +20,18 @@ export default function ViewViajes({ onNewTicket, searchQ = '' }) {
   const p = perm() || {}
 
   function exportarExcel(rows) {
-    const headers = ['Folio 1','Folio 2','Tipo','Tracto','Gondola 1','M³ G1','Gondola 2','M³ G2','KM','Origen','Destino','Operador','Agremiado','Fecha Salida','Hora Salida','Fecha Llegada','Estado','Estimacion','Cobro','Pago']
-    const data = rows.map(v => [
-      v.id, v.folio2||'', v.tipo, v.tracto, v.gondola1||'', v.m3_1||0,
-      v.gondola2||'', v.m3_2||0, v.km||0,
-      v.origen||'', v.destino||'', v.operador||'',
-      agremiados?.find(a=>a.id===v.agremiado_id)?.nombre||'',
-      v.fecha_salida||'', v.hora_salida||'', v.fecha_llegada||'',
-      v.estado, v.estimacion_id||'',
-      vCobro(v), vPago(v)
-    ])
+    const headers = ['Folio','Gondola','M³','Tipo','Tracto','KM','Origen','Destino','Operador','Agremiado','Fecha Salida','Hora Salida','Fecha Llegada','Estado','Estimacion','Cobro','Pago']
+    const data = []
+    rows.forEach(v => {
+      const ag = agremiados?.find(a=>a.id===v.agremiado_id)?.nombre||''
+      const base = [v.tipo, v.tracto, v.km||0, v.origen||'', v.destino||'', v.operador||'', ag, v.fecha_salida||'', v.hora_salida||'', v.fecha_llegada||'', v.estado, v.estimacion_id||'', vCobro(v), vPago(v)]
+      // Fila gondola 1
+      data.push([v.id, v.gondola1||'', v.m3_1||0, ...base])
+      // Fila gondola 2 (solo Full)
+      if (v.tipo === 'full') {
+        data.push([v.folio2||'', v.gondola2||'', v.m3_2||0, ...base])
+      }
+    })
     const csv = [headers, ...data].map(r => r.map(x => `"${String(x).replace(/"/g,'""')}"`).join(',')).join('\n')
     const blob = new Blob(['\ufeff'+csv], { type: 'text/csv;charset=utf-8;' })
     const url  = URL.createObjectURL(blob)

@@ -294,11 +294,25 @@ export default function ModalTicket({ onClose, onSaved }) {
             </select>
           </div>
         </div>
-        {(camionId || agremiadoId) && (
+        {/* Si seleccionó de flotilla muestra resumen, si no muestra campos para capturar */}
+        {camionId ? (
           <div style={{ background: 'rgba(245,158,11,.08)', border: '1px solid rgba(245,158,11,.2)', borderRadius: 7, padding: '9px 12px', marginBottom: 8, fontSize: 11, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
             {agremiadoNombre && <div><span style={{ color: 'var(--muted)' }}>Agremiado: </span><b>{agremiadoNombre}</b></div>}
             {tracto && <div><span style={{ color: 'var(--muted)' }}>Tracto: </span><b style={{ fontFamily:"'Space Mono',monospace" }}>{tracto}</b></div>}
             {g1 && <div><span style={{ color: 'var(--muted)' }}>Gondola(s): </span><b style={{ fontFamily:"'Space Mono',monospace" }}>{g1}{g2?' + '+g2:''}</b></div>}
+          </div>
+        ) : (
+          <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, padding: '12px 14px', marginBottom: 8 }}>
+            <div style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 700, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '.5px' }}>
+              Datos del camión — se agregará a flotilla automáticamente
+            </div>
+            <div className="row2">
+              <div className="fg"><label>Placa Tracto</label><input value={tracto} onChange={e => setTracto(e.target.value.toUpperCase())} placeholder="44BB2Z" /></div>
+              <div className="fg"><label>Placa Gondola 1</label><input value={g1} onChange={e => setG1(e.target.value.toUpperCase())} placeholder="49US3T" /></div>
+            </div>
+            {tipo === 'full' && (
+              <div className="fg"><label>Placa Gondola 2</label><input value={g2} onChange={e => setG2(e.target.value.toUpperCase())} placeholder="Segunda gondola" /></div>
+            )}
           </div>
         )}
 

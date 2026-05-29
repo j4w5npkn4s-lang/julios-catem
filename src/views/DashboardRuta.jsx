@@ -40,9 +40,12 @@ export default function DashboardRuta() {
   const [tipoInc, setTipoInc]       = useState('accidente')
   const [filtro, setFiltro]         = useState('todos')
 
-  // Solo viajes abiertos (en ruta) + accidentados/robados
+  // Viajes en ruta + entregados hoy/recientes + accidentados/robados
+  const hoy = new Date().toISOString().split('T')[0]
   const enRuta = viajes.filter(v =>
-    (v.estado === 'abierto' || v.incidente) && v.estado !== 'cerrado'
+    v.estado === 'abierto' ||
+    v.incidente ||
+    (v.fecha_llegada && v.fecha_llegada >= hoy) // entregados hoy
   )
 
   const filtrados = filtro === 'todos' ? enRuta : enRuta.filter(v => {
@@ -51,17 +54,19 @@ export default function DashboardRuta() {
     if (filtro === 'leve')       return s.nivel === 2
     if (filtro === 'riesgo')     return s.nivel === 3
     if (filtro === 'grave')      return s.nivel === 4 && !v.incidente
+    if (filtro === 'entregados') return getSemaforo(v).nivel === 0
     if (filtro === 'incidente')  return !!v.incidente
     return true
   }).sort((a,b) => getSemaforo(b).nivel - getSemaforo(a).nivel)
 
   // Conteos
   const counts = {
-    en_ruta:   enRuta.filter(v => getSemaforo(v).nivel === 1).length,
-    leve:      enRuta.filter(v => getSemaforo(v).nivel === 2).length,
-    riesgo:    enRuta.filter(v => getSemaforo(v).nivel === 3).length,
-    grave:     enRuta.filter(v => getSemaforo(v).nivel === 4 && !v.incidente).length,
-    incidente: enRuta.filter(v => !!v.incidente).length,
+    en_ruta:    enRuta.filter(v => getSemaforo(v).nivel === 1).length,
+    entregados: enRuta.filter(v => getSemaforo(v).nivel === 0).length,
+    leve:       enRuta.filter(v => getSemaforo(v).nivel === 2).length,
+    riesgo:     enRuta.filter(v => getSemaforo(v).nivel === 3).length,
+    grave:      enRuta.filter(v => getSemaforo(v).nivel === 4 && !v.incidente).length,
+    incidente:  enRuta.filter(v => !!v.incidente).length,
   }
 
   async function marcarIncidente() {
@@ -85,13 +90,14 @@ export default function DashboardRuta() {
       </div>
 
       {/* KPIs semáforo */}
-      <div className="kpis" style={{ gridTemplateColumns: 'repeat(5,1fr)', marginBottom: 14 }}>
+      <div className="kpis" style={{ gridTemplateColumns: 'repeat(6,1fr)', marginBottom: 14 }}>
         {[
-          { key: 'en_ruta',  color: '#22C55E', label: '🟢 En ruta',           count: counts.en_ruta },
-          { key: 'leve',     color: '#F59E0B', label: '🟡 Retraso leve',      count: counts.leve },
-          { key: 'riesgo',   color: '#F97316', label: '🟠 Riesgo',            count: counts.riesgo },
-          { key: 'grave',    color: '#EF4444', label: '🔴 Alta gravedad',     count: counts.grave },
-          { key: 'incidente',color: '#EF4444', label: '🚨 Incidentes',        count: counts.incidente },
+          { key: 'en_ruta',    color: '#22C55E', label: '🟢 En ruta',        count: counts.en_ruta },
+          { key: 'entregados', color: '#3B82F6', label: '✅ Entregados hoy', count: counts.entregados },
+          { key: 'leve',       color: '#F59E0B', label: '🟡 Retraso leve',   count: counts.leve },
+          { key: 'riesgo',     color: '#F97316', label: '🟠 Riesgo',         count: counts.riesgo },
+          { key: 'grave',      color: '#EF4444', label: '🔴 Alta gravedad',  count: counts.grave },
+          { key: 'incidente',  color: '#EF4444', label: '🚨 Incidentes',     count: counts.incidente },
         ].map(k => (
           <div key={k.key} className="kpi clickable" style={{ borderLeft: `3px solid ${k.color}`, cursor:'pointer' }}
             onClick={() => setFiltro(filtro === k.key ? 'todos' : k.key)}>

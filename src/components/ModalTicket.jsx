@@ -5,7 +5,7 @@ import Modal from '../components/Modal'
 import FotoSlot from '../components/FotoSlot'
 
 export default function ModalTicket({ onClose, onSaved }) {
-  const { addViaje, vCobro, vPago, fmt, config, destinos, estimaciones,
+  const { addViaje, addCamion, vCobro, vPago, fmt, config, destinos, estimaciones,
           flotilla, agremiados, uploadFoto, perm, today, user } = useApp()
   const toast = useToast()
   const [saving, setSaving] = useState(false)
@@ -163,13 +163,34 @@ export default function ModalTicket({ onClose, onSaved }) {
     if (!bid) return toast('Folio 1 requerido', 'err')
     if (tipo === 'full' && !bid2) return toast('Folio 2 requerido para viaje Full', 'err')
     if (!m1 || !km) return toast('M³ y KM requeridos', 'err')
-    if (!camionId) return toast('Selecciona un camión de la flotilla', 'err')
+    // camionId es opcional - si no se seleccionó se crea el camión automáticamente
     setSaving(true)
     try {
       let urlTSal = null, urlTSal2 = null, urlTracto = null
       if (fotoTSal)   urlTSal   = await uploadFoto(fotoTSal,   `tickets/${bid}`)
       if (fotoTSal2)  urlTSal2  = await uploadFoto(fotoTSal2,  `tickets/${bid2||bid}`)
       if (fotoTracto) urlTracto = await uploadFoto(fotoTracto, `tickets/${bid}`)
+
+      // Si no se seleccionó camión de flotilla, crear automáticamente
+      let agIdFinal = agremiadoId || null
+      if (!camionId && tracto.trim()) {
+        const existente = flotilla.find(f => f.placa_tracto === tracto.toUpperCase())
+        if (!existente) {
+          try {
+            await addCamion({
+              tipo,
+              placa_tracto: tracto.toUpperCase(),
+              placa_gondola1: g1.toUpperCase() || null,
+              m3_gondola1: parseFloat(m1) || 0,
+              placa_gondola2: tipo === 'full' ? (g2.toUpperCase() || null) : null,
+              m3_gondola2: tipo === 'full' ? (parseFloat(m2) || 0) : 0,
+              agremiado_id: agIdFinal,
+              ultimo_viaje: fSal,
+            })
+            toast(`Camión ${tracto.toUpperCase()} agregado a flotilla automáticamente`, 'ok')
+          } catch { /* si falla no bloqueamos el ticket */ }
+        }
+      }
 
       await addViaje({
         id: bid, folio2: tipo === 'full' ? bid2 : null, tipo,
@@ -225,43 +246,40 @@ export default function ModalTicket({ onClose, onSaved }) {
           </button>
         </>}>
 
-        {/* TIPO — botones grandes igual que en flotilla */}
+        {/* TIPO — botones grandes */}
         <div className="tipo-sel">
-          <div className={`tipo-btn${tipo==='sencillo'?' sel':''}`} onClick={() => { setTipo('sencillo'); setCamionId(''); setTracto(''); setG1(''); setG2(''); setM1(''); setM2(''); setAgNombre(''); setAgId('') }}>
+          <div className={`tipo-btn${tipo==='sencillo'?' sel':''}`} onClick={() => { setTipo('sencillo'); setCamionId(''); }}>
             <i className="ti ti-truck" style={{ fontSize: 28, display: 'block', marginBottom: 8 }} />
             <div style={{ fontSize: 14, fontWeight: 700 }}>Sencillo</div>
             <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 3 }}>1 tracto · 1 gondola · 1 folio</div>
           </div>
-          <div className={`tipo-btn${tipo==='full'?' sel':''}`} onClick={() => { setTipo('full'); setCamionId(''); setTracto(''); setG1(''); setG2(''); setM1(''); setM2(''); setAgNombre(''); setAgId('') }}>
+          <div className={`tipo-btn${tipo==='full'?' sel':''}`} onClick={() => { setTipo('full'); setCamionId(''); }}>
             <i className="ti ti-truck" style={{ fontSize: 28, display: 'block', marginBottom: 8 }} />
             <div style={{ fontSize: 14, fontWeight: 700 }}>Full</div>
             <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 3 }}>1 tracto · 2 gondolas · 2 folios</div>
           </div>
         </div>
 
-        {/* CAMIÓN (autofill) */}
-        <div className="sdv">Seleccionar camión</div>
+        {/* CAMIÓN — seleccionar de flotilla O escribir directo */}
+        <div className="sdv">Camión</div>
         <div className="fg">
-          <label>Camión de la flotilla</label>
+          <label>Buscar en flotilla <span style={{ fontWeight:400, fontSize:9, textTransform:'none', letterSpacing:0, color:'var(--muted)' }}>(opcional — puedes escribir directo abajo)</span></label>
           <select value={camionId} onChange={e => handleCamionChange(e.target.value)}>
-            <option value="">— Selecciona el camión ({tipo.toUpperCase()}) —</option>
+            <option value="">— Selecciona de flotilla o escribe placa abajo —</option>
             {flotillaActiva.filter(f => f.tipo === tipo).map(f => {
               const ag = agremiados.find(a => a.id === f.agremiado_id)
               return (
                 <option key={f.id} value={f.id}>
-                  [{f.tipo.toUpperCase()}] {f.placa_tracto} — {ag?.nombre || '—'} — {f.placa_gondola1}{f.placa_gondola2 ? ' + '+f.placa_gondola2 : ''}
+                  {f.placa_tracto} — {ag?.nombre || '—'} — {f.placa_gondola1}{f.placa_gondola2 ? ' + '+f.placa_gondola2 : ''}
                 </option>
               )
             })}
           </select>
         </div>
-
-        {/* Info autofill */}
         {camionId && (
-          <div style={{ background: 'rgba(245,158,11,.08)', border: '1px solid rgba(245,158,11,.2)', borderRadius: 7, padding: '9px 12px', marginBottom: 12, fontSize: 11, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-            <div><span style={{ color: 'var(--muted)' }}>Tipo: </span><b>{tipo.toUpperCase()}</b></div>
-            <div><span style={{ color: 'var(--muted)' }}>Tracto: </span><b style={{ fontFamily: "'Space Mono',monospace" }}>{tracto}</b></div>
-            <div><span style={{ color: 'var(--muted)' }}>Gondola(s): </span><b style={{ fontFamily: "'Space Mono',monospace" }}>{g1}{g2 ? ' + '+g2 : ''}</b></div>
+          <div style={{ background: 'rgba(245,158,11,.08)', border: '1px solid rgba(245,158,11,.2)', borderRadius: 7, padding: '9px 12px', marginBottom: 8, fontSize: 11, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+            <div><span style={{ color: 'var(--muted)' }}>Tracto: </span><b style={{ fontFamily:"'Space Mono',monospace" }}>{tracto}</b></div>
+            <div><span style={{ color: 'var(--muted)' }}>Gondola(s): </span><b style={{ fontFamily:"'Space Mono',monospace" }}>{g1}{g2?' + '+g2:''}</b></div>
             <div><span style={{ color: 'var(--muted)' }}>Agremiado: </span><b>{agremiadoNombre}</b></div>
           </div>
         )}

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { supabase } from '../lib/supabase'
 import { useApp } from '../lib/AppContext'
 import { useToast } from '../components/Toast'
 import Modal from '../components/Modal'
@@ -48,6 +49,37 @@ export default function ModalEditarViaje({ viaje: v, onClose, onSaved }) {
       if (fotoTSal)   urlTSal   = await uploadFoto(fotoTSal,   `tickets/${bid}`)
       if (fotoTracto) urlTracto = await uploadFoto(fotoTracto, `tickets/${bid}`)
       if (fotoLleg)   urlLleg   = await uploadFoto(fotoLleg,   `tickets/${bid}`)
+
+      // Si cambió el folio (ID primario), insertar nuevo y borrar el viejo
+      const folioChanged = bid.trim() !== v.id
+      if (folioChanged) {
+        // Insertar con nuevo ID
+        const { error: insErr } = await supabase.from('viajes').insert([{
+          id: bid.trim(),
+          tipo,
+          folio2: tipo === 'full' ? bid2 : null,
+          tracto: tracto.toUpperCase(),
+          gondola1: g1.toUpperCase(),
+          gondola2: tipo === 'full' ? g2.toUpperCase() : null,
+          m3_1: parseFloat(m1)||0,
+          m3_2: tipo === 'full' ? (parseFloat(m2)||0) : 0,
+          km: parseFloat(km)||0,
+          material: mat, origen, destino,
+          fecha_salida: fSal, hora_salida: hSal||null,
+          fecha_llegada: fLleg||null, hora_llegada: hLleg||null,
+          operador, agremiado_id: agremiadoId||null,
+          estimacion_id: estId||null, estado,
+          notas,
+          foto_ticket_salida: !!urlTSal, foto_tracto: !!urlTracto, foto_ticket_llegada: !!urlLleg,
+          foto_ticket_salida_url: urlTSal, foto_tracto_url: urlTracto, foto_ticket_llegada_url: urlLleg,
+          registrado_por: v.registrado_por,
+        }])
+        if (insErr) throw new Error('Error al guardar nuevo folio: ' + insErr.message)
+        // Borrar el viejo
+        await supabase.from('viajes').delete().eq('id', v.id)
+        toast(`Folio actualizado: ${v.id} → ${bid.trim()} ✓`, 'ok')
+        onSaved?.(); onClose(); return
+      }
 
       await updateViaje(v.id, {
         tipo,

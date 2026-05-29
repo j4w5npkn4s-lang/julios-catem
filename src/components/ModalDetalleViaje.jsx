@@ -5,11 +5,178 @@ import ModalPago from './ModalPago'
 import Pill from './Pill'
 
 export default function ModalDetalleViaje({ viaje: v, onClose, onReabrir }) {
-  const { vCobro, vPago, vUtil, vM3, fmt, pagos, agremiados, perm } = useApp()
+  const { vCobro, vPago, vUtil, vM3, fmt, pagos, agremiados, perm, loadAll } = useApp()
   const p = perm()
 
-  const [showPago, setShowPago] = useState(false)
-  const [showEdit, setShowEdit] = useState(false)
+  const [showPago, setShowPago]   = useState(false)
+  const [showEdit, setShowEdit]   = useState(false)
+  const [generando, setGenerando] = useState(false)
+
+  async function compartirViaje() {
+    setGenerando(true)
+    try {
+      const canvas  = document.createElement('canvas')
+      canvas.width  = 800
+      canvas.height = 520
+      const ctx = canvas.getContext('2d')
+
+      // Fondo
+      const grad = ctx.createLinearGradient(0, 0, 800, 520)
+      grad.addColorStop(0, '#111318')
+      grad.addColorStop(1, '#1A1D24')
+      ctx.fillStyle = grad
+      ctx.fillRect(0, 0, 800, 520)
+
+      // Borde naranja arriba
+      ctx.fillStyle = '#F59E0B'
+      ctx.fillRect(0, 0, 800, 5)
+
+      // Logo pequeño
+      await new Promise(resolve => {
+        const img = new Image()
+        img.crossOrigin = 'anonymous'
+        img.onload = () => {
+          ctx.save()
+          ctx.beginPath()
+          ctx.arc(40, 40, 28, 0, Math.PI * 2)
+          ctx.clip()
+          ctx.drawImage(img, 12, 12, 56, 56)
+          ctx.restore()
+          resolve()
+        }
+        img.onerror = resolve
+        img.src = '/icon-192.png'
+      })
+
+      // Título
+      ctx.fillStyle = '#F59E0B'
+      ctx.font = 'bold 18px "Space Mono", monospace'
+      ctx.fillText('ORDEN DE CARGA · JSV', 82, 32)
+      ctx.fillStyle = '#8A8F9E'
+      ctx.font = '12px DM Sans, sans-serif'
+      ctx.fillText('Sindicato Julios Sánchez Vargas · CATEM México', 82, 52)
+
+      // Separador
+      ctx.fillStyle = '#2E3340'
+      ctx.fillRect(16, 70, 768, 1)
+
+      // Datos del viaje (columna izquierda)
+      const rows = [
+        ['FOLIO',    v.id + (v.folio2 ? ' / ' + v.folio2 : '')],
+        ['TIPO',     v.tipo?.toUpperCase()],
+        ['TRACTO',   v.tracto],
+        ['GONDOLA',  v.tipo === 'full' ? `${v.gondola1} + ${v.gondola2||'?'}` : v.gondola1],
+        ['M³',       String(vM3(v))],
+        ['ORIGEN',   v.origen || '—'],
+        ['DESTINO',  v.destino || '—'],
+        ['KM',       String(v.km || '—')],
+        ['OPERADOR', v.operador],
+        ['AGREMIADO',agremiados?.find(a=>a.id===v.agremiado_id)?.nombre || '—'],
+        ['FECHA SAL',v.fecha_salida + (v.hora_salida ? ' ' + v.hora_salida : '')],
+        ['MATERIAL', v.material || '—'],
+      ]
+
+      let y = 95
+      rows.forEach(([label, val]) => {
+        ctx.fillStyle = '#5A5F6E'
+        ctx.font = 'bold 10px DM Sans'
+        ctx.fillText(label, 20, y)
+        ctx.fillStyle = '#E8E6E0'
+        ctx.font = '13px "Space Mono", monospace'
+        ctx.fillText(String(val || '—').slice(0, 32), 130, y)
+        y += 26
+      })
+
+      // Fotos a la derecha
+      const fotoSize = 180
+      const fotoY    = 80
+      const fotoX1   = 460
+      const fotoX2   = 460 + fotoSize + 12
+
+      const drawFoto = (url, x, y, label) => new Promise(resolve => {
+        if (!url) {
+          ctx.fillStyle = '#22262F'
+          ctx.fillRect(x, y, fotoSize, fotoSize)
+          ctx.fillStyle = '#5A5F6E'
+          ctx.font = '11px DM Sans'
+          ctx.fillText('Sin foto', x + fotoSize/2 - 22, y + fotoSize/2)
+          ctx.fillStyle = '#F59E0B'
+          ctx.font = 'bold 10px DM Sans'
+          ctx.fillText(label, x, y + fotoSize + 14)
+          resolve(); return
+        }
+        const img = new Image()
+        img.crossOrigin = 'anonymous'
+        img.onload = () => {
+          // Clip rounded rect
+          ctx.save()
+          ctx.beginPath()
+          ctx.roundRect(x, y, fotoSize, fotoSize, 8)
+          ctx.clip()
+          // Cover fit
+          const ratio = Math.max(fotoSize/img.width, fotoSize/img.height)
+          const w = img.width * ratio, h = img.height * ratio
+          ctx.drawImage(img, x-(w-fotoSize)/2, y-(h-fotoSize)/2, w, h)
+          ctx.restore()
+          ctx.fillStyle = '#F59E0B'
+          ctx.font = 'bold 10px DM Sans'
+          ctx.fillText(label, x, y + fotoSize + 14)
+          resolve()
+        }
+        img.onerror = () => {
+          ctx.fillStyle = '#22262F'
+          ctx.fillRect(x, y, fotoSize, fotoSize)
+          ctx.fillStyle = '#F59E0B'
+          ctx.font = 'bold 10px DM Sans'
+          ctx.fillText(label, x, y + fotoSize + 14)
+          resolve()
+        }
+        img.src = url
+      })
+
+      await drawFoto(v.foto_tracto_url, fotoX1, fotoY, 'FOTO TRACTO')
+      await drawFoto(v.foto_ticket_salida_url, fotoX2, fotoY, 'TICKET SALIDA')
+
+      // Pie
+      ctx.fillStyle = '#2E3340'
+      ctx.fillRect(16, 480, 768, 1)
+      ctx.fillStyle = '#5A5F6E'
+      ctx.font = '11px DM Sans'
+      ctx.fillText(`Generado por JSV Tracking · ${new Date().toLocaleString('es-MX')}`, 16, 498)
+
+      // Borde naranja abajo
+      ctx.fillStyle = '#F59E0B'
+      ctx.fillRect(0, 515, 800, 5)
+
+      // Descargar
+      const dataUrl = canvas.toDataURL('image/png')
+      const a = document.createElement('a')
+      a.href = dataUrl
+      a.download = `orden-${v.id}.png`
+      a.click()
+
+      // Abrir WhatsApp
+      await new Promise(r => setTimeout(r, 800))
+      const txt = `🚛 *ORDEN DE CARGA · JSV*
+
+*Folio:* ${v.id}${v.folio2?' / '+v.folio2:''}
+*Tipo:* ${v.tipo?.toUpperCase()}
+*Tracto:* ${v.tracto}
+*Gondola:* ${v.tipo==='full'?v.gondola1+' + '+(v.gondola2||'?'):v.gondola1}
+*M³:* ${vM3(v)}
+*Operador:* ${v.operador}
+*Origen:* ${v.origen||'—'}
+*Destino:* ${v.destino||'—'}
+*Fecha:* ${v.fecha_salida||'—'} ${v.hora_salida||''}
+
+_Generado por JSV Tracking_`
+      window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank')
+
+    } catch(err) {
+      alert('Error: ' + err.message)
+    }
+    setGenerando(false)
+  }
 
   if (!v) return null
 
@@ -135,6 +302,9 @@ export default function ModalDetalleViaje({ viaje: v, onClose, onReabrir }) {
             </button>
           )}
           <div style={{ flex: 1 }} />
+          <button className="btn btn-out btn-sm" onClick={compartirViaje} disabled={generando}>
+            <i className="ti ti-brand-whatsapp" />{generando ? 'Generando...' : 'Compartir'}
+          </button>
           {p.canTodo && (
             <button className="btn btn-out btn-sm" onClick={() => setShowEdit(true)}>
               <i className="ti ti-edit" />Editar ticket

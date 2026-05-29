@@ -4,6 +4,8 @@ import { ToastProvider, useToast } from './components/Toast'
 import Sidebar from './components/Sidebar'
 import Login from './views/Login'
 import Dashboard from './views/Dashboard'
+import DashboardRuta from './views/DashboardRuta'
+import DashboardFinanciero from './views/DashboardFinanciero'
 import ViewViajes from './views/ViewViajes'
 import ViewFlotilla from './views/ViewFlotilla'
 import ViewAgremiados from './views/ViewAgremiados'
@@ -131,6 +133,8 @@ function AppInner() {
     switch (cur) {
       case 'home':       return user.rol === 'aux_contador' ? <HomeAuxContador /> : <HomeChecador onNewTicket={() => setShowTicket(true)} />
       case 'dash':       return <Dashboard onNewTicket={() => setShowTicket(true)} searchQ={searchQ} />
+      case 'dash-ruta':  return <DashboardRuta />
+      case 'dash-fin':   return <DashboardFinanciero />
       case 'viajes':     return <ViewViajes onNewTicket={() => setShowTicket(true)} searchQ={searchQ} />
       case 'flotilla':   return <ViewFlotilla />
       case 'agremiados': return <ViewAgremiados />

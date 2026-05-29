@@ -4,6 +4,8 @@ import { useApp } from '../lib/AppContext'
 const NAV = [
   { id: 'home',       ico: 'home',             label: 'Inicio',           roles: ['checador','aux_contador'] },
   { id: 'dash',       ico: 'layout-dashboard', label: 'Dashboard',        roles: ['admin','contador','supervisor'] },
+  { id: 'dash-ruta',  ico: 'truck-delivery',   label: 'Viajes en Ruta',   roles: ['admin','contador','supervisor'] },
+  { id: 'dash-fin',   ico: 'chart-pie',        label: 'Financiero',       roles: ['admin','contador'] },
   { id: 'viajes',     ico: 'truck',            label: 'Todos los viajes', roles: ['admin'] },
   { id: 'flotilla',   ico: 'truck-delivery',   label: 'Flotilla',         roles: ['admin','contador','supervisor'] },
   { id: 'agremiados', ico: 'users-group',      label: 'Agremiados',       roles: ['admin','contador','supervisor'] },

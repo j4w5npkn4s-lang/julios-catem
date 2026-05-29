@@ -50,3 +50,7 @@ alter table flotilla enable row level security;
 create policy "public_all" on agremiados for all using (true) with check (true);
 create policy "public_all" on destinos for all using (true) with check (true);
 create policy "public_all" on flotilla for all using (true) with check (true);
+
+-- Campo incidente para viajes accidentados/robados
+alter table viajes add column if not exists incidente text check (incidente in ('accidente','robo'));
+alter table viajes add column if not exists incidente_notas text;

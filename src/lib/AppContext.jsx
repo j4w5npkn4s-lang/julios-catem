@@ -103,11 +103,11 @@ export function AppProvider({ children }) {
   async function addViaje(data) {
     const { error } = await supabase.from('viajes').insert([{ ...data, registrado_por: user.id }])
     if (error) throw error
-    // Update flotilla ultimo_viaje
     if (data.tracto) {
       const cam = flotilla.find(f => f.placa_tracto === data.tracto)
       if (cam) await supabase.from('flotilla').update({ ultimo_viaje: data.fecha_salida, activo: true }).eq('id', cam.id)
     }
+    await loadAll()
   }
 
   async function updateViaje(id, data) {
@@ -121,6 +121,7 @@ export function AppProvider({ children }) {
       foto_ticket_llegada: !!fotoUrl, foto_ticket_llegada_url: fotoUrl || null,
       estado: 'pendiente_conciliar',
     })
+    await loadAll()
   }
 
   async function mandarAPago(viajeIds) {

@@ -20,8 +20,8 @@ export default function Dashboard({ onNewTicket, searchQ = '' }) {
   // DASH 1: REQUIEREN ATENCIÓN
   const conProblema = viajes.filter(v => {
     if (v.estado === 'cerrado') return false
-    // Problemas: sin foto tracto, sin ticket salida, sin operador, o aún abierto (sin llegada)
-    const tieneProblema = !v.foto_ticket_salida || !v.foto_tracto || v.estado === 'abierto' || !v.operador || v.operador === '—'
+    const sinLlegada = v.estado === 'abierto' && !v.fecha_llegada
+    const tieneProblema = !v.foto_ticket_salida || !v.foto_tracto || sinLlegada || !v.operador || v.operador === '—'
     if (!tieneProblema) return false
     if (searchQ) {
       const sq = searchQ.toLowerCase()

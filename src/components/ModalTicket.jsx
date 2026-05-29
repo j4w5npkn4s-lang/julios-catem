@@ -260,27 +260,45 @@ export default function ModalTicket({ onClose, onSaved }) {
           </div>
         </div>
 
-        {/* CAMIÓN — seleccionar de flotilla O escribir directo */}
-        <div className="sdv">Camión</div>
-        <div className="fg">
-          <label>Buscar en flotilla <span style={{ fontWeight:400, fontSize:9, textTransform:'none', letterSpacing:0, color:'var(--muted)' }}>(opcional — puedes escribir directo abajo)</span></label>
-          <select value={camionId} onChange={e => handleCamionChange(e.target.value)}>
-            <option value="">— Selecciona de flotilla o escribe placa abajo —</option>
-            {flotillaActiva.filter(f => f.tipo === tipo).map(f => {
-              const ag = agremiados.find(a => a.id === f.agremiado_id)
-              return (
-                <option key={f.id} value={f.id}>
-                  {f.placa_tracto} — {ag?.nombre || '—'} — {f.placa_gondola1}{f.placa_gondola2 ? ' + '+f.placa_gondola2 : ''}
-                </option>
-              )
-            })}
-          </select>
+        {/* AGREMIADO → CAMIÓN */}
+        <div className="sdv">Agremiado y camión</div>
+        <div className="row2">
+          <div className="fg">
+            <label>1. Agremiado</label>
+            <select value={agremiadoId} onChange={e => {
+              setAgId(e.target.value)
+              const ag = agremiados.find(a => a.id === e.target.value)
+              setAgNombre(ag?.nombre || '')
+              setCamionId('')
+              setTracto(''); setG1(''); setG2(''); setM1(''); setM2('')
+            }}>
+              <option value="">— Selecciona agremiado —</option>
+              {agremiados.filter(a => a.activo !== false).map(a => (
+                <option key={a.id} value={a.id}>{a.nombre}</option>
+              ))}
+            </select>
+          </div>
+          <div className="fg">
+            <label>2. Camión <span style={{ fontWeight:400, fontSize:9, textTransform:'none', letterSpacing:0, color:'var(--muted)' }}>(opcional si es nuevo)</span></label>
+            <select value={camionId} onChange={e => handleCamionChange(e.target.value)}
+              disabled={!agremiadoId && flotillaActiva.filter(f=>f.tipo===tipo).length > 0}>
+              <option value="">— Selecciona camión o escribe placa abajo —</option>
+              {flotillaActiva
+                .filter(f => f.tipo === tipo && (!agremiadoId || f.agremiado_id === agremiadoId))
+                .map(f => (
+                  <option key={f.id} value={f.id}>
+                    {f.placa_tracto} — {f.placa_gondola1}{f.placa_gondola2 ? ' + '+f.placa_gondola2 : ''} ({(f.m3_gondola1||0)+(f.m3_gondola2||0)} m³)
+                  </option>
+                ))
+              }
+            </select>
+          </div>
         </div>
-        {camionId && (
+        {(camionId || agremiadoId) && (
           <div style={{ background: 'rgba(245,158,11,.08)', border: '1px solid rgba(245,158,11,.2)', borderRadius: 7, padding: '9px 12px', marginBottom: 8, fontSize: 11, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-            <div><span style={{ color: 'var(--muted)' }}>Tracto: </span><b style={{ fontFamily:"'Space Mono',monospace" }}>{tracto}</b></div>
-            <div><span style={{ color: 'var(--muted)' }}>Gondola(s): </span><b style={{ fontFamily:"'Space Mono',monospace" }}>{g1}{g2?' + '+g2:''}</b></div>
-            <div><span style={{ color: 'var(--muted)' }}>Agremiado: </span><b>{agremiadoNombre}</b></div>
+            {agremiadoNombre && <div><span style={{ color: 'var(--muted)' }}>Agremiado: </span><b>{agremiadoNombre}</b></div>}
+            {tracto && <div><span style={{ color: 'var(--muted)' }}>Tracto: </span><b style={{ fontFamily:"'Space Mono',monospace" }}>{tracto}</b></div>}
+            {g1 && <div><span style={{ color: 'var(--muted)' }}>Gondola(s): </span><b style={{ fontFamily:"'Space Mono',monospace" }}>{g1}{g2?' + '+g2:''}</b></div>}
           </div>
         )}
 

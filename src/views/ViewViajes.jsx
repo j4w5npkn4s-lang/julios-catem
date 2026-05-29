@@ -7,7 +7,7 @@ import ModalLlegada from '../components/ModalLlegada'
 import ModalPago from '../components/ModalPago'
 
 export default function ViewViajes({ onNewTicket, searchQ = '' }) {
-  const { viajes, estimaciones, vCobro, vPago, vUtil, vM3, fmt, reabrirViaje, perm } = useApp()
+  const { viajes, estimaciones, agremiados, vCobro, vPago, vUtil, vM3, fmt, reabrirViaje, perm } = useApp()
   const [fEst, setFEst]       = useState('')
   const [fStatus, setFStatus] = useState('')
   const [fFecha, setFFecha]   = useState('')
@@ -19,13 +19,37 @@ export default function ViewViajes({ onNewTicket, searchQ = '' }) {
 
   const p = perm() || {}
 
+  function exportarExcel(rows) {
+    const headers = ['Folio 1','Folio 2','Tipo','Tracto','Gondola 1','M³ G1','Gondola 2','M³ G2','KM','Origen','Destino','Operador','Agremiado','Fecha Salida','Hora Salida','Fecha Llegada','Estado','Estimacion','Cobro','Pago']
+    const data = rows.map(v => [
+      v.id, v.folio2||'', v.tipo, v.tracto, v.gondola1||'', v.m3_1||0,
+      v.gondola2||'', v.m3_2||0, v.km||0,
+      v.origen||'', v.destino||'', v.operador||'',
+      agremiados?.find(a=>a.id===v.agremiado_id)?.nombre||'',
+      v.fecha_salida||'', v.hora_salida||'', v.fecha_llegada||'',
+      v.estado, v.estimacion_id||'',
+      vCobro(v), vPago(v)
+    ])
+    const csv = [headers, ...data].map(r => r.map(x => `"${String(x).replace(/"/g,'""')}"`).join(',')).join('\n')
+    const blob = new Blob(['\ufeff'+csv], { type: 'text/csv;charset=utf-8;' })
+    const url  = URL.createObjectURL(blob)
+    const a    = document.createElement('a')
+    a.href = url
+    a.download = `tickets-jsv-${new Date().toISOString().slice(0,10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   const filtered = viajes.filter(v => {
-    if (fEst    && v.estimacion_id !== fEst) return false
-    if (fStatus && v.estado !== fStatus) return false
-    if (fFecha  && v.fecha_salida !== fFecha) return false
+    if (fEst && v.estimacion_id !== fEst) return false
+    if (fStatus === 'sin_conciliar') {
+      if (!['abierto','pendiente_conciliar'].includes(v.estado)) return false
+    } else if (fStatus && v.estado !== fStatus) return false
+    if (fFecha && v.fecha_salida !== fFecha) return false
     const busqueda = (q || searchQ).toLowerCase()
     if (busqueda) {
-      if (!(v.id + v.tracto + v.operador + (v.gondola1||'') + (v.gondola2||'') + (v.estimacion_id||'') + (v.origen||'') + (v.destino||'')).toLowerCase().includes(busqueda)) return false
+      const haystack = (v.id + (v.folio2||'') + v.tracto + v.operador + (v.gondola1||'') + (v.gondola2||'') + (v.estimacion_id||'') + (v.origen||'') + (v.destino||'')).toLowerCase()
+      if (!haystack.includes(busqueda)) return false
     }
     return true
   })
@@ -49,6 +73,9 @@ export default function ViewViajes({ onNewTicket, searchQ = '' }) {
 
         <div style={{ flex: 1 }} />
         <span style={{ fontSize: 11, color: 'var(--muted)' }}>{filtered.length} resultado{filtered.length !== 1 ? 's' : ''}</span>
+        <button className="btn btn-out btn-sm" onClick={() => exportarExcel(filtered)} title="Exportar a Excel">
+          <i className="ti ti-table-export" />Excel
+        </button>
       </div>
 
       <div className="tc">
@@ -66,7 +93,10 @@ export default function ViewViajes({ onNewTicket, searchQ = '' }) {
             <tbody>
               {filtered.length ? filtered.map(v => (
                 <tr key={v.id} className="tr" onClick={() => setDetalleV(v)}>
-                  <td><span className="mono" style={{ color: 'var(--acc)' }}>{v.id}</span></td>
+                  <td>
+                    <span className="mono" style={{ color: 'var(--acc)', fontWeight:700 }}>{v.id}</span>
+                    {v.folio2 && <div className="mono" style={{ color: 'var(--muted)', fontSize:10 }}>{v.folio2}</div>}
+                  </td>
                   <td><Pill s={v.tipo} /></td>
                   <td><b>{v.tracto}</b></td>
                   <td>{v.tipo === 'full' ? `${v.gondola1} + ${v.gondola2 || '?'}` : v.gondola1 || '-'}</td>

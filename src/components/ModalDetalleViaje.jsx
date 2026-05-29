@@ -148,15 +148,6 @@ export default function ModalDetalleViaje({ viaje: v, onClose, onReabrir }) {
       ctx.fillStyle = '#F59E0B'
       ctx.fillRect(0, 515, 800, 5)
 
-      // Descargar
-      const dataUrl = canvas.toDataURL('image/png')
-      const a = document.createElement('a')
-      a.href = dataUrl
-      a.download = `orden-${v.id}.png`
-      a.click()
-
-      // Abrir WhatsApp
-      await new Promise(r => setTimeout(r, 800))
       const txt = `🚛 *ORDEN DE CARGA · JSV*
 
 *Folio:* ${v.id}${v.folio2?' / '+v.folio2:''}
@@ -170,7 +161,27 @@ export default function ModalDetalleViaje({ viaje: v, onClose, onReabrir }) {
 *Fecha:* ${v.fecha_salida||'—'} ${v.hora_salida||''}
 
 _Generado por JSV Tracking_`
-      window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank')
+
+      // Convertir canvas a blob
+      const blob = await new Promise(res => canvas.toBlob(res, 'image/png'))
+      const file = new File([blob], `orden-${v.id}.png`, { type: 'image/png' })
+
+      // Web Share API — comparte imagen + texto directo a WhatsApp en Android
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title: `Orden de Carga · ${v.id}`,
+          text: txt,
+          files: [file],
+        })
+      } else {
+        // Fallback: descargar imagen + abrir WhatsApp con texto
+        const url = URL.createObjectURL(blob)
+        const a   = document.createElement('a')
+        a.href = url; a.download = `orden-${v.id}.png`; a.click()
+        URL.revokeObjectURL(url)
+        await new Promise(r => setTimeout(r, 800))
+        window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank')
+      }
 
     } catch(err) {
       alert('Error: ' + err.message)

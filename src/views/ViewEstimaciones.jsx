@@ -299,7 +299,10 @@ function PantallaDetalle({ est, onBack }) {
             <tbody>
               {vsEst.length ? vsEst.map(v => (
                 <tr key={v.id} className="tr">
-                  <td><span className="mono" style={{ color: 'var(--acc)' }}>{v.id}</span></td>
+                  <td>
+                    <span className="mono" style={{ color: 'var(--acc)', fontWeight:700 }}>{v.id}</span>
+                    {v.folio2 && <div className="mono" style={{ color: 'var(--muted)', fontSize:9 }}>{v.folio2}</div>}
+                  </td>
                   <td><b>{v.tracto}</b></td>
                   <td><Pill s={v.tipo} /></td>
                   <td style={{ fontSize: 10 }}>{v.operador}</td>
@@ -352,8 +355,12 @@ function PantallaDetalle({ est, onBack }) {
                   <div key={v.id} className="chkr">
                     <input type="checkbox" checked={selec.has(v.id)} onChange={() => toggleV(v.id)} />
                     <div style={{ flex: 1 }}>
-                      <span style={{ fontFamily: "'Space Mono',monospace", color: 'var(--acc)', fontSize: 11 }}>{v.id}</span>
-                      {' · '}<span style={{ fontSize: 11 }}>{v.tracto} · {v.operador}</span>
+                      <div style={{ display:'flex', gap:6, alignItems:'center', flexWrap:'wrap' }}>
+                        <span style={{ fontFamily: "'Space Mono',monospace", color: 'var(--acc)', fontSize: 11, fontWeight:700 }}>{v.id}</span>
+                        {v.folio2 && <span style={{ fontFamily: "'Space Mono',monospace", color: 'var(--muted)', fontSize: 10 }}>+ {v.folio2}</span>}
+                        <span className={`pill ${v.tipo==='full'?'pp':'pgr'}`} style={{ fontSize:8 }}>{v.tipo.toUpperCase()}</span>
+                      </div>
+                      <span style={{ fontSize: 11 }}>{v.tracto} · {v.operador}</span>
                       <span style={{ fontSize: 10, color: 'var(--muted)' }}> · {v.fecha_salida||'—'}</span>
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>

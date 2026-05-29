@@ -20,7 +20,9 @@ export default function Dashboard({ onNewTicket, searchQ = '' }) {
   // DASH 1: REQUIEREN ATENCIÓN
   const conProblema = viajes.filter(v => {
     if (v.estado === 'cerrado') return false
-    if (!(!v.foto_ticket_salida || !v.foto_tracto || v.estado === 'abierto' || !v.operador || v.operador === '—')) return false
+    // Problemas: sin foto tracto, sin ticket salida, sin operador, o aún abierto (sin llegada)
+    const tieneProblema = !v.foto_ticket_salida || !v.foto_tracto || v.estado === 'abierto' || !v.operador || v.operador === '—'
+    if (!tieneProblema) return false
     if (searchQ) {
       const sq = searchQ.toLowerCase()
       if (!(v.id + v.tracto + v.operador + (v.gondola1||'')).toLowerCase().includes(sq)) return false
@@ -50,7 +52,7 @@ export default function Dashboard({ onNewTicket, searchQ = '' }) {
     const p = []
     if (!v.foto_ticket_salida) p.push('Sin T.Salida')
     if (!v.foto_tracto) p.push('Sin foto tracto')
-    if (v.estado === 'abierto') p.push('Sin T.Llegada')
+    if (v.estado === 'abierto' && !v.fecha_llegada) p.push('Sin llegada')
     if (!v.operador || v.operador === '—') p.push('Sin operador')
     return p
   }
@@ -79,7 +81,7 @@ export default function Dashboard({ onNewTicket, searchQ = '' }) {
             <div className="kpi orn"><div className="kpi-l">Con problemas</div><div className="kpi-v" style={{ color: 'var(--err)' }}>{conProblema.length}</div><div className="kpi-s">Total viajes</div></div>
             <div className="kpi"><div className="kpi-l">Sin foto tracto</div><div className="kpi-v" style={{ color: 'var(--err)' }}>{viajes.filter(v => !v.foto_tracto && v.estado !== 'cerrado').length}</div><div className="kpi-s">Pendiente</div></div>
             <div className="kpi"><div className="kpi-l">Sin ticket salida</div><div className="kpi-v" style={{ color: 'var(--warn)' }}>{viajes.filter(v => !v.foto_ticket_salida && v.estado !== 'cerrado').length}</div><div className="kpi-s">Pendiente</div></div>
-            <div className="kpi"><div className="kpi-l">Sin ticket llegada</div><div className="kpi-v" style={{ color: 'var(--warn)' }}>{viajes.filter(v => v.estado === 'abierto').length}</div><div className="kpi-s">Viajes abiertos</div></div>
+            <div className="kpi"><div className="kpi-l">Sin llegada</div><div className="kpi-v" style={{ color: 'var(--warn)' }}>{viajes.filter(v => v.estado === 'abierto' && !v.fecha_llegada).length}</div><div className="kpi-s">Sin fecha llegada</div></div>
           </div>
           <div className="tc">
             <div className="tc-h"><span className="tc-t">Viajes que requieren atención</span></div>

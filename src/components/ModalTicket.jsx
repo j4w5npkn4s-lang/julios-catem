@@ -19,9 +19,9 @@ export default function ModalTicket({ onClose, onSaved }) {
   const [origenSel, setOrigenSel] = useState('')
   const [destinoSel, setDestinoSel] = useState('')
   const [camionId, setCamionId] = useState('') // flotilla id
-  const [mat, setMat]         = useState('')
+  const [mat, setMat]         = useState('AI BALASTO')
   const [fSal, setFSal]       = useState(today())
-  const [hSal, setHSal]       = useState(new Date().toTimeString().slice(0,5))
+  const [hSal, setHSal]       = useState(new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',hour12:false}))
   const [operador, setOper]   = useState('')
   const [notas, setNotas]     = useState('')
 

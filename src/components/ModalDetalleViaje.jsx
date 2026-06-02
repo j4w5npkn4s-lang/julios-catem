@@ -162,25 +162,33 @@ export default function ModalDetalleViaje({ viaje: v, onClose, onReabrir }) {
 
 _Generado por JSV Tracking_`
 
-      // Convertir canvas a blob
       const blob = await new Promise(res => canvas.toBlob(res, 'image/png'))
       const file = new File([blob], `orden-${v.id}.png`, { type: 'image/png' })
 
-      // Web Share API — comparte imagen + texto directo a WhatsApp en Android
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          title: `Orden de Carga · ${v.id}`,
-          text: txt,
-          files: [file],
-        })
+      const isAndroid = /Android/i.test(navigator.userAgent)
+      const isIOS     = /iPhone|iPad/i.test(navigator.userAgent)
+
+      // En Android/iPhone usar Web Share API para enviar imagen directo
+      if ((isAndroid || isIOS) && navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ title: `Orden de Carga · ${v.id}`, text: txt, files: [file] })
+        } catch (e) {
+          if (e.name !== 'AbortError') {
+            // Si falla Web Share, fallback a descarga + WA
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a'); a.href=url; a.download=`orden-${v.id}.png`; a.click()
+            URL.revokeObjectURL(url)
+            await new Promise(r => setTimeout(r, 800))
+            window.open('https://wa.me/?text='+encodeURIComponent(txt), '_blank')
+          }
+        }
       } else {
-        // Fallback: descargar imagen + abrir WhatsApp con texto
+        // En Mac/desktop: descargar imagen + abrir WhatsApp Web con texto
         const url = URL.createObjectURL(blob)
-        const a   = document.createElement('a')
-        a.href = url; a.download = `orden-${v.id}.png`; a.click()
+        const a = document.createElement('a'); a.href=url; a.download=`orden-${v.id}.png`; a.click()
         URL.revokeObjectURL(url)
         await new Promise(r => setTimeout(r, 800))
-        window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank')
+        window.open('https://wa.me/?text='+encodeURIComponent(txt), '_blank')
       }
 
     } catch(err) {

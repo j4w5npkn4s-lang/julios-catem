@@ -176,7 +176,7 @@ function PantallaDetalle({ est, onBack }) {
   // Viajes de esta estimación
   const vsEst = viajes.filter(v => v.estimacion_id === est.id)
   // Viajes pendientes de conciliar (para agregar)
-  const vsPend = viajes.filter(v => v.estado === 'pendiente_conciliar' && v.estimacion_id !== est.id)
+  const vsPend = viajes.filter(v => ['abierto','pendiente_conciliar'].includes(v.estado) && v.estimacion_id !== est.id)
 
   const totalM3  = vsEst.reduce((a,v) => a + vM3(v), 0)
   const totalCob = vsEst.reduce((a,v) => a + vCobro(v), 0)
@@ -342,7 +342,11 @@ function PantallaDetalle({ est, onBack }) {
               </div>
               {/* Seleccionar todos */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <div style={{ fontSize: 11, color: 'var(--muted)' }}>Viajes pendientes de conciliar ({vsPend.length})</div>
+                <div style={{ fontSize: 11, color: 'var(--muted)' }}>
+    Viajes disponibles ({vsPend.length}) — 
+    <span style={{ color: 'var(--acc)' }}> {vsPend.filter(v=>v.estado==='abierto').length} abiertos</span>
+    <span style={{ color: 'var(--ok)' }}> · {vsPend.filter(v=>v.estado==='pendiente_conciliar').length} con llegada</span>
+  </div>
                 <button className="btn btn-out btn-xs" onClick={() => setSelec(selec.size===vsPend.length?new Set():new Set(vsPend.map(v=>v.id)))}>
                   {selec.size===vsPend.length?'Deseleccionar todos':'Seleccionar todos'}
                 </button>
@@ -357,6 +361,10 @@ function PantallaDetalle({ est, onBack }) {
                         <span style={{ fontFamily: "'Space Mono',monospace", color: 'var(--acc)', fontSize: 11, fontWeight:700 }}>{v.id}</span>
                         {v.folio2 && <span style={{ fontFamily: "'Space Mono',monospace", color: 'var(--muted)', fontSize: 10 }}>+ {v.folio2}</span>}
                         <span className={`pill ${v.tipo==='full'?'pp':'pgr'}`} style={{ fontSize:8 }}>{v.tipo.toUpperCase()}</span>
+                        {v.estado === 'abierto'
+                          ? <span className="pill pa" style={{ fontSize:8 }}>⚠ Abierto (sin llegada)</span>
+                          : <span className="pill pg" style={{ fontSize:8 }}>✓ Con llegada</span>
+                        }
                       </div>
                       <span style={{ fontSize: 11 }}>{v.tracto} · {v.operador}</span>
                       <span style={{ fontSize: 10, color: 'var(--muted)' }}> · {v.fecha_salida||'—'}</span>

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { supabase } from '../lib/supabase'
 import { useApp } from '../lib/AppContext'
 import { useToast } from '../components/Toast'
 import Modal from '../components/Modal'
@@ -165,7 +166,6 @@ function PantallaEstimaciones({ anio, onBack, onSelectEst }) {
 function PantallaDetalle({ est, onBack }) {
   const { viajes, estimaciones, vCobro, vPago, vM3, fmt, updateViaje, uploadFoto,
           supabase: _s, perm, loadAll } = useApp()
-  const { supabase } = require('../lib/supabase') || {}
   const toast = useToast()
   const p = perm()
   const [showAgregar, setShowAgregar] = useState(false)
@@ -216,8 +216,7 @@ function PantallaDetalle({ est, onBack }) {
       let podUrl = est.pod_url || null
       if (podFile) podUrl = await uploadFoto(podFile, `pods/${est.id}`)
       // Update estimacion
-      const { supabase: sb } = await import('../lib/supabase')
-      await sb.from('estimaciones').update({ estado: 'cerrada', pod_url: podUrl }).eq('id', est.id)
+      await supabase.from('estimaciones').update({ estado: 'cerrada', pod_url: podUrl }).eq('id', est.id)
       // Close all viajes
       for (const v of vsEst) await updateViaje(v.id, { estado: 'cerrado' })
       toast(`Estimación ${est.id} cerrada ✓`, 'ok')
@@ -230,8 +229,7 @@ function PantallaDetalle({ est, onBack }) {
   async function handleReabrir() {
     if (!p.canTodo) return toast('Solo admin puede reabrir', 'err')
     try {
-      const { supabase: sb } = await import('../lib/supabase')
-      await sb.from('estimaciones').update({ estado: 'abierta' }).eq('id', est.id)
+      await supabase.from('estimaciones').update({ estado: 'abierta' }).eq('id', est.id)
       toast('Estimación reabierta', 'warn')
       await loadAll()
     } catch (err) { toast(err.message, 'err') }

@@ -207,9 +207,28 @@ function PantallaDetalle({ est, onBack }) {
       for (const id of selec) {
         await updateViaje(id, { estimacion_id: est.id, estado: 'en_conciliacion' })
       }
+      await loadAll()
       toast(`${selec.size} viaje(s) agregados a la estimación ✓`, 'ok')
       setSelec(new Set()); setShowAgregar(false)
     } catch (err) { toast(err.message, 'err') }
+  }
+
+  function exportarExcel() {
+    const vsEst = viajes.filter(v => v.estimacion_id === est.id)
+    const headers = ['Folio','Gondola','M³','Tipo','Tracto','KM','Origen','Destino','Operador','Agremiado','Fecha Salida','Hora Salida','Fecha Llegada','Estado','Cobro','Pago']
+    const data = []
+    vsEst.forEach(v => {
+      const ag = agremiados?.find(a=>a.id===v.agremiado_id)?.nombre||''
+      const base = [v.tipo, v.tracto, v.km||0, v.origen||'', v.destino||'', v.operador||'', ag, v.fecha_salida||'', v.hora_salida||'', v.fecha_llegada||'', v.estado, vCobro(v), vPago(v)]
+      data.push([v.id, v.gondola1||'', v.m3_1||0, ...base])
+      if (v.tipo === 'full') data.push([v.folio2||'', v.gondola2||'', v.m3_2||0, ...base])
+    })
+    const csv = [headers, ...data].map(r => r.map(x => `"${String(x).replace(/"/g,'""')}"`).join(',')).join('\n')
+    const blob = new Blob(['\ufeff'+csv], { type:'text/csv;charset=utf-8;' })
+    const url  = URL.createObjectURL(blob)
+    const a    = document.createElement('a')
+    a.href=url; a.download=`${est.id}.csv`; a.click()
+    URL.revokeObjectURL(url)
   }
 
   async function handleQuitarViaje(id) {
@@ -217,6 +236,57 @@ function PantallaDetalle({ est, onBack }) {
       await updateViaje(id, { estimacion_id: null, estado: 'pendiente_conciliar' })
       toast('Viaje removido', 'ok')
     } catch (err) { toast(err.message, 'err') }
+  }
+
+  async function exportarFotosPDF() {
+    const vsEst = viajes.filter(v => v.estimacion_id === est.id)
+    const canvas = document.createElement('canvas')
+    canvas.width = 794; canvas.height = vsEst.length * 420 + 80
+    const ctx = canvas.getContext('2d')
+    ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+    const loadImg = url => new Promise(res => {
+      if (!url) { res(null); return }
+      const img = new Image(); img.crossOrigin='anonymous'
+      img.onload=()=>res(img); img.onerror=()=>res(null); img.src=url
+    })
+
+    ctx.fillStyle='#111318'; ctx.fillRect(0,0,794,50)
+    ctx.fillStyle='#F59E0B'; ctx.font='bold 16px monospace'
+    ctx.fillText(`${est.id} — Fotos de tickets`, 20, 32)
+
+    let y = 60
+    for (const v of vsEst) {
+      ctx.fillStyle='#F3F4F6'; ctx.fillRect(10, y, 774, 400)
+      ctx.fillStyle='#111318'; ctx.font='bold 13px monospace'
+      ctx.fillText(`${v.id}${v.folio2?' / '+v.folio2:''} · ${v.tracto} · ${v.operador} · ${v.fecha_salida||''}`, 20, y+22)
+      ctx.fillStyle='#6B7280'; ctx.font='11px sans-serif'
+      ctx.fillText(`${v.origen||'—'} → ${v.destino||'—'} · ${vM3(v)} m³`, 20, y+40)
+
+      const imgSal  = await loadImg(v.foto_ticket_salida_url)
+      const imgLleg = await loadImg(v.foto_ticket_llegada_url)
+      const drawPhoto = (img, x, iy, label) => {
+        ctx.fillStyle='#E5E7EB'; ctx.fillRect(x, iy, 370, 310)
+        ctx.fillStyle='#374151'; ctx.font='bold 11px sans-serif'; ctx.fillText(label, x+10, iy+20)
+        if (img) {
+          const ratio = Math.min(360/img.width, 280/img.height)
+          const w=img.width*ratio, h=img.height*ratio
+          ctx.drawImage(img, x+(370-w)/2, iy+25+(280-h)/2, w, h)
+        } else {
+          ctx.fillStyle='#9CA3AF'; ctx.font='12px sans-serif'; ctx.fillText('Sin foto', x+160, iy+165)
+        }
+      }
+      drawPhoto(imgSal,  14, y+50, '📄 TICKET SALIDA')
+      drawPhoto(imgLleg, 394, y+50, '📄 TICKET LLEGADA')
+      y += 420
+    }
+
+    canvas.toBlob(blob => {
+      const url = URL.createObjectURL(blob)
+      const a   = document.createElement('a')
+      a.href=url; a.download=`${est.id}-fotos.png`; a.click()
+      URL.revokeObjectURL(url)
+    }, 'image/png')
   }
 
   async function handleCerrar() {

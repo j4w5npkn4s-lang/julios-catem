@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import ModalDetalleViaje from '../components/ModalDetalleViaje'
 import { supabase } from '../lib/supabase'
 import { useApp } from '../lib/AppContext'
 import { useToast } from '../components/Toast'
@@ -175,6 +176,7 @@ function PantallaDetalle({ est, onBack }) {
   const [fAgr, setFAgr]               = useState('')
   const [podFile, setPodFile]         = useState(null)
   const [closing, setClosing]         = useState(false)
+  const [detalleV, setDetalleV]       = useState(null)
 
   // Viajes de esta estimación
   const vsEst = viajes.filter(v => v.estimacion_id === est.id)
@@ -594,6 +596,7 @@ function PantallaDetalle({ est, onBack }) {
           </div>
         </div>
       )}
+      {detalleV && <ModalDetalleViaje viaje={detalleV} onClose={() => setDetalleV(null)} />}
     </div>
   )
 }

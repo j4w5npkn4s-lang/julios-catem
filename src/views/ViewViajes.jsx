@@ -11,6 +11,7 @@ export default function ViewViajes({ onNewTicket, searchQ = '' }) {
   const [fEst, setFEst]       = useState('')
   const [fStatus, setFStatus] = useState('')
   const [fFecha, setFFecha]   = useState('')
+  const [fFechaF, setFFechaF] = useState('')
   const [q, setQ]             = useState('')
   const [llegadaV, setLlegadaV] = useState(null)
   const [detalleV, setDetalleV] = useState(null)
@@ -71,7 +72,13 @@ export default function ViewViajes({ onNewTicket, searchQ = '' }) {
           <option value="pendiente_pago">Pend. pago</option>
           <option value="cerrado">Cerrado</option>
         </select>
-        <input type="date" value={fFecha} onChange={e => setFFecha(e.target.value)} style={{ height: 28, fontSize: 11, padding: '0 7px', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text)' }} />
+        <input type="date" value={fFecha} onChange={e => setFFecha(e.target.value)}
+          style={{ height:28, fontSize:11, padding:'0 7px', background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:6, color:'var(--text)' }}
+          placeholder="Desde" title="Fecha desde" />
+        <span style={{ fontSize:11, color:'var(--muted)' }}>→</span>
+        <input type="date" value={fFechaF} onChange={e => setFFechaF(e.target.value)}
+          style={{ height:28, fontSize:11, padding:'0 7px', background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:6, color:'var(--text)' }}
+          placeholder="Hasta" title="Fecha hasta" />
 
         <div style={{ flex: 1 }} />
         <span style={{ fontSize: 11, color: 'var(--muted)' }}>{filtered.length} resultado{filtered.length !== 1 ? 's' : ''}</span>

@@ -238,6 +238,104 @@ function PantallaDetalle({ est, onBack }) {
     } catch (err) { toast(err.message, 'err') }
   }
 
+  function imprimirCaratula() {
+    const vsEst = viajes.filter(v => v.estimacion_id === est.id)
+    const totalM3   = vsEst.reduce((a,v)=>a+vM3(v),0)
+    const totalCob  = vsEst.reduce((a,v)=>a+vCobro(v),0)
+    const totalPag  = vsEst.reduce((a,v)=>a+vPago(v),0)
+    const totalUtil = totalCob - totalPag
+    const senc = vsEst.filter(v=>v.tipo==='sencillo').length
+    const full = vsEst.filter(v=>v.tipo==='full').length
+
+    // Por agremiado
+    const porAgr = (agremiados||[]).map(a => {
+      const vs = vsEst.filter(v=>v.agremiado_id===a.id)
+      if (!vs.length) return null
+      return { nombre:a.nombre, viajes:vs.length, m3:vs.reduce((x,v)=>x+vM3(v),0), cobro:vs.reduce((x,v)=>x+vCobro(v),0), pago:vs.reduce((x,v)=>x+vPago(v),0) }
+    }).filter(Boolean)
+
+    const rows = vsEst.map(v => `
+      <tr>
+        <td style="font-family:monospace;font-size:11px;color:#b45309">${v.id}${v.folio2?'<br><span style="color:#999;font-size:10px">'+v.folio2+'</span>':''}</td>
+        <td>${v.tipo.toUpperCase()}</td>
+        <td style="font-family:monospace">${v.tracto}</td>
+        <td>${agremiados?.find(a=>a.id===v.agremiado_id)?.nombre||'—'}</td>
+        <td style="text-align:right;font-family:monospace">${vM3(v)}</td>
+        <td style="text-align:right">${v.km||'—'}</td>
+        <td style="text-align:right;color:#166534;font-family:monospace">${fmt(vCobro(v))}</td>
+        <td style="text-align:right;color:#991b1b;font-family:monospace">${fmt(vPago(v))}</td>
+        <td>${v.estado}</td>
+      </tr>`).join('')
+
+    const agRows = porAgr.map(a => `
+      <tr>
+        <td><b>${a.nombre}</b></td>
+        <td style="text-align:center">${a.viajes}</td>
+        <td style="text-align:right;font-family:monospace">${a.m3.toFixed(2)}</td>
+        <td style="text-align:right;color:#166534;font-family:monospace">${fmt(a.cobro)}</td>
+        <td style="text-align:right;color:#991b1b;font-family:monospace">${fmt(a.pago)}</td>
+        <td style="text-align:right;color:#5b21b6;font-family:monospace;font-weight:700">${fmt(a.cobro-a.pago)}</td>
+      </tr>`).join('')
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+    <title>${est.id}</title>
+    <style>
+      body{font-family:sans-serif;font-size:12px;margin:24px;color:#111}
+      h1{font-size:20px;margin:0}h2{font-size:14px;margin:16px 0 6px;border-bottom:2px solid #f59e0b;padding-bottom:4px}
+      .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0}
+      .kpi{border:1px solid #e5e7eb;border-radius:8px;padding:12px;text-align:center}
+      .kpi-l{font-size:10px;color:#6b7280;text-transform:uppercase;font-weight:700}
+      .kpi-v{font-size:22px;font-weight:700;font-family:monospace;margin-top:4px}
+      .util{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:12px 0;background:#f9fafb;border-radius:8px;padding:12px}
+      .util div{text-align:center}
+      table{width:100%;border-collapse:collapse;margin-top:8px;font-size:11px}
+      th{background:#f3f4f6;padding:5px 8px;text-align:left;font-size:10px;text-transform:uppercase;border-bottom:2px solid #e5e7eb}
+      td{padding:5px 8px;border-bottom:1px solid #f3f4f6}
+      tr:nth-child(even){background:#fafafa}
+      .footer{margin-top:24px;font-size:10px;color:#9ca3af;text-align:center;border-top:1px solid #e5e7eb;padding-top:8px}
+      @media print{body{margin:12px}.no-print{display:none}}
+    </style></head><body>
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
+      <div>
+        <h1 style="color:#b45309">${est.id}</h1>
+        <div style="font-size:16px;font-weight:700">${est.nombre||'Estimación'}</div>
+        <div style="color:#6b7280;font-size:12px">${est.fecha_inicio||''} → ${est.fecha_fin||''}</div>
+      </div>
+      <div style="margin-left:auto;text-align:right">
+        <div style="font-size:11px;color:#6b7280">CATEM México · Sindicato JSV</div>
+        <div style="font-size:11px;color:#6b7280">Generado: ${new Date().toLocaleString('es-MX')}</div>
+      </div>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi"><div class="kpi-l">Viajes</div><div class="kpi-v" style="color:#b45309">${vsEst.length}</div><div style="font-size:10px;color:#6b7280">${senc} senc · ${full} full</div></div>
+      <div class="kpi"><div class="kpi-l">M³ Total</div><div class="kpi-v" style="color:#1d4ed8">${totalM3.toFixed(2)}</div></div>
+      <div class="kpi"><div class="kpi-l">Cobro Total</div><div class="kpi-v" style="color:#166534">${fmt(totalCob)}</div></div>
+      <div class="kpi"><div class="kpi-l">Pago Camioneros</div><div class="kpi-v" style="color:#991b1b">${fmt(totalPag)}</div></div>
+    </div>
+    <div class="util">
+      <div><div style="font-size:10px;color:#6b7280;text-transform:uppercase;font-weight:700">Utilidad Total</div><div style="font-size:20px;font-weight:700;font-family:monospace;color:#5b21b6">${fmt(totalUtil)}</div></div>
+      <div><div style="font-size:10px;color:#6b7280;text-transform:uppercase;font-weight:700">CATEM (50%)</div><div style="font-size:18px;font-weight:700;font-family:monospace;color:#5b21b6">${fmt(totalUtil/2)}</div></div>
+      <div><div style="font-size:10px;color:#6b7280;text-transform:uppercase;font-weight:700">JSV (50%)</div><div style="font-size:18px;font-weight:700;font-family:monospace;color:#5b21b6">${fmt(totalUtil/2)}</div></div>
+    </div>
+
+    <h2>Resumen por agremiado</h2>
+    <table><thead><tr><th>Agremiado</th><th>Viajes</th><th>M³</th><th>Cobro</th><th>Pago</th><th>Utilidad</th></tr></thead>
+    <tbody>${agRows}</tbody></table>
+
+    <h2>Detalle de viajes (${vsEst.length})</h2>
+    <table><thead><tr><th>Ticket</th><th>Tipo</th><th>Tracto</th><th>Agremiado</th><th>M³</th><th>KM</th><th>Cobro</th><th>Pago</th><th>Estado</th></tr></thead>
+    <tbody>${rows}</tbody></table>
+
+    <div class="footer">JSV Tracking · ${est.id} · ${new Date().toLocaleString('es-MX')}</div>
+    <script>window.onload=()=>window.print()</script>
+    </body></html>`
+
+    const w = window.open('', '_blank')
+    w.document.write(html)
+    w.document.close()
+  }
+
   async function exportarFotosPDF() {
     const vsEst = viajes.filter(v => v.estimacion_id === est.id)
     const canvas = document.createElement('canvas')

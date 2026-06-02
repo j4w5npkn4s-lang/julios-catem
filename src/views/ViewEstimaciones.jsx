@@ -164,19 +164,29 @@ function PantallaEstimaciones({ anio, onBack, onSelectEst }) {
 
 // ── PANTALLA 3: DETALLE ESTIMACIÓN ───────────────────────────────
 function PantallaDetalle({ est, onBack }) {
-  const { viajes, estimaciones, vCobro, vPago, vM3, fmt, updateViaje, uploadFoto,
+  const { viajes, estimaciones, agremiados, vCobro, vPago, vM3, fmt, updateViaje, uploadFoto,
           supabase: _s, perm, loadAll } = useApp()
   const toast = useToast()
   const p = perm()
   const [showAgregar, setShowAgregar] = useState(false)
   const [selec, setSelec]             = useState(new Set())
+  const [fDesde, setFDesde]           = useState('')
+  const [fHasta, setFHasta]           = useState('')
+  const [fAgr, setFAgr]               = useState('')
   const [podFile, setPodFile]         = useState(null)
   const [closing, setClosing]         = useState(false)
 
   // Viajes de esta estimación
   const vsEst = viajes.filter(v => v.estimacion_id === est.id)
   // Viajes pendientes de conciliar (para agregar)
-  const vsPend = viajes.filter(v => ['abierto','pendiente_conciliar'].includes(v.estado) && v.estimacion_id !== est.id)
+  const vsPend = viajes.filter(v => {
+    if (!['abierto','pendiente_conciliar'].includes(v.estado)) return false
+    if (v.estimacion_id === est.id) return false
+    if (fDesde && v.fecha_salida < fDesde) return false
+    if (fHasta && v.fecha_salida > fHasta) return false
+    if (fAgr   && v.agremiado_id !== fAgr) return false
+    return true
+  })
 
   const totalM3  = vsEst.reduce((a,v) => a + vM3(v), 0)
   const totalCob = vsEst.reduce((a,v) => a + vCobro(v), 0)
@@ -340,6 +350,25 @@ function PantallaDetalle({ est, onBack }) {
                 <div><span style={{ color: 'var(--muted)' }}>M³: </span><b>{selM3.toFixed(2)}</b></div>
                 <div><span style={{ color: 'var(--muted)' }}>Cobro: </span><b style={{ color: 'var(--cobro)', fontFamily: "'Space Mono',monospace" }}>{fmt(selCob)}</b></div>
               </div>
+              {/* Filtros */}
+              <div style={{ display:'flex', gap:6, marginBottom:10, flexWrap:'wrap', alignItems:'center' }}>
+                <input type="date" value={fDesde} onChange={e=>setFDesde(e.target.value)}
+                  style={{ height:28, fontSize:11, padding:'0 7px', background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:6, color:'var(--text)' }} title="Desde" />
+                <span style={{ fontSize:11, color:'var(--muted)' }}>→</span>
+                <input type="date" value={fHasta} onChange={e=>setFHasta(e.target.value)}
+                  style={{ height:28, fontSize:11, padding:'0 7px', background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:6, color:'var(--text)' }} title="Hasta" />
+                <select value={fAgr} onChange={e=>setFAgr(e.target.value)}
+                  style={{ height:28, fontSize:11, padding:'0 7px', background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:6, color:'var(--text)', minWidth:130 }}>
+                  <option value="">Todos los agremiados</option>
+                  {agremiados?.filter(a=>a.activo!==false).map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}
+                </select>
+                {(fDesde||fHasta||fAgr) && (
+                  <button className="btn btn-out btn-xs" onClick={()=>{setFDesde('');setFHasta('');setFAgr('')}}>
+                    <i className="ti ti-x"/>Limpiar
+                  </button>
+                )}
+              </div>
+
               {/* Seleccionar todos */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                 <div style={{ fontSize: 11, color: 'var(--muted)' }}>

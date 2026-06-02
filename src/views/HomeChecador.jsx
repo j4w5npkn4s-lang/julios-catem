@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useApp } from '../lib/AppContext'
+import ModalDetalleViaje from '../components/ModalDetalleViaje'
 import Pill from '../components/Pill'
 import ModalLlegada from '../components/ModalLlegada'
 
@@ -7,6 +8,7 @@ export default function HomeChecador({ onNewTicket }) {
   const { user, viajes, today } = useApp()
   const [search, setSearch]       = useState('')
   const [llegadaViaje, setLlegada] = useState(null)
+  const [detalleViaje, setDetalleViaje] = useState(null)
 
   const hora = new Date().getHours()
   const saludo = hora < 12 ? 'Buenos días' : hora < 19 ? 'Buenas tardes' : 'Buenas noches'
@@ -104,6 +106,7 @@ export default function HomeChecador({ onNewTicket }) {
       </div>
 
       {/* MODAL BUSCAR LLEGADA */}
+      {detalleViaje && <ModalDetalleViaje viaje={detalleViaje} onClose={() => setDetalleViaje(null)} />}
       {llegadaViaje === 'buscar' && (
         <BuscadorLlegada
           abiertos={abiertos}

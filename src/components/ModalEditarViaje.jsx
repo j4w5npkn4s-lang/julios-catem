@@ -6,7 +6,7 @@ import Modal from '../components/Modal'
 import FotoSlot from '../components/FotoSlot'
 
 export default function ModalEditarViaje({ viaje: v, onClose, onSaved }) {
-  const { updateViaje, flotilla, agremiados, destinos, estimaciones, uploadFoto, today } = useApp()
+  const { updateViaje, loadAll, flotilla, agremiados, destinos, estimaciones, uploadFoto, today } = useApp()
   const toast = useToast()
   const [saving, setSaving] = useState(false)
 
@@ -108,6 +108,7 @@ export default function ModalEditarViaje({ viaje: v, onClose, onSaved }) {
         foto_tracto_url: urlTracto,
         foto_ticket_llegada_url: urlLleg,
       })
+      await loadAll()
       toast(`Ticket ${v.id} actualizado ✓`, 'ok')
       onSaved?.()
       onClose()

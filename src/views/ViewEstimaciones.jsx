@@ -265,19 +265,28 @@ function PantallaDetalle({ est, onBack }) {
 
       const imgSal  = await loadImg(v.foto_ticket_salida_url)
       const imgLleg = await loadImg(v.foto_ticket_llegada_url)
-      const drawPhoto = (img, x, iy, label) => {
-        ctx.fillStyle='#E5E7EB'; ctx.fillRect(x, iy, 370, 310)
+      const drawPhoto = (img, x, iy, label, hasRecord) => {
+        ctx.fillStyle = img ? '#E5E7EB' : hasRecord ? '#FEF3C7' : '#FEE2E2'
+        ctx.fillRect(x, iy, 370, 310)
         ctx.fillStyle='#374151'; ctx.font='bold 11px sans-serif'; ctx.fillText(label, x+10, iy+20)
         if (img) {
           const ratio = Math.min(360/img.width, 280/img.height)
           const w=img.width*ratio, h=img.height*ratio
           ctx.drawImage(img, x+(370-w)/2, iy+25+(280-h)/2, w, h)
         } else {
-          ctx.fillStyle='#9CA3AF'; ctx.font='12px sans-serif'; ctx.fillText('Sin foto', x+160, iy+165)
+          ctx.fillStyle = hasRecord ? '#92400E' : '#991B1B'
+          ctx.font = 'bold 13px sans-serif'
+          const msg = hasRecord ? '⚠ Sin foto adjunta' : '✗ NO EXISTE TICKET DE LLEGADA'
+          ctx.fillText(msg, x + (370 - ctx.measureText(msg).width)/2, iy+165)
+          if (!hasRecord) {
+            ctx.fillStyle='#DC2626'; ctx.font='11px sans-serif'
+            const sub = 'Pendiente de registrar'
+            ctx.fillText(sub, x + (370 - ctx.measureText(sub).width)/2, iy+185)
+          }
         }
       }
-      drawPhoto(imgSal,  14, y+50, '📄 TICKET SALIDA')
-      drawPhoto(imgLleg, 394, y+50, '📄 TICKET LLEGADA')
+      drawPhoto(imgSal,  14,  y+50, '📄 TICKET SALIDA',  !!v.foto_ticket_salida)
+      drawPhoto(imgLleg, 394, y+50, '📄 TICKET LLEGADA', !!v.fecha_llegada)
       y += 420
     }
 

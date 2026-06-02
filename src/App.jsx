@@ -26,6 +26,19 @@ function AppInner() {
   const { user, viajes, loading, loadAll } = useApp()
   const toast = useToast()
   const [view, setView]         = useState(null)
+  const [tema, setTema]         = useState(() => localStorage.getItem('tema') || 'dark')
+
+  // Apply theme to document
+  useState(() => {
+    document.documentElement.setAttribute('data-theme', tema === 'light' ? 'light' : 'dark')
+  })
+
+  function toggleTema() {
+    const nuevo = tema === 'dark' ? 'light' : 'dark'
+    setTema(nuevo)
+    localStorage.setItem('tema', nuevo)
+    document.documentElement.setAttribute('data-theme', nuevo === 'light' ? 'light' : 'dark')
+  }
   const [showTicket, setShowTicket] = useState(false)
   const [searchQ, setSearchQ]   = useState('')
   const [refreshing, setRefreshing] = useState(false)

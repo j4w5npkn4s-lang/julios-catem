@@ -162,7 +162,7 @@ function AppInner() {
 
   return (
     <div className="app">
-      <Sidebar current={cur} onChange={handleNav} badges={badges} />
+      <Sidebar current={cur} onChange={handleNav} badges={badges} tema={tema} onToggleTema={toggleTema} />
       <div className="main">
         <div className="topbar">
           <div className="topbar-title">{TITLES[cur] || cur}</div>

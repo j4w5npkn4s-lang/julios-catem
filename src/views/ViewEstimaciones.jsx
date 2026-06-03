@@ -440,6 +440,15 @@ function PantallaDetalle({ est, onBack }) {
           <button className="btn btn-acc btn-sm" onClick={() => setShowAgregar(true)}>
             <i className="ti ti-plus" />Agregar viajes
           </button>
+          <button className="btn btn-out btn-sm" onClick={imprimirCaratula}>
+            <i className="ti ti-printer" />Imprimir
+          </button>
+          <button className="btn btn-out btn-sm" onClick={exportarExcel}>
+            <i className="ti ti-table-export" />Excel
+          </button>
+          <button className="btn btn-out btn-sm" onClick={exportarFotosPDF}>
+            <i className="ti ti-file-download" />Fotos PDF
+          </button>
         )}
         {est.estado === 'cerrada' && p.canTodo && (
           <button className="btn btn-danger btn-sm" onClick={handleReabrir}><i className="ti ti-lock-open" />Reabrir</button>

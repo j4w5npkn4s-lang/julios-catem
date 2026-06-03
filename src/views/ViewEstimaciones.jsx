@@ -479,13 +479,20 @@ function PantallaDetalle({ est, onBack }) {
 
       {/* Tabla viajes */}
       <div className="tc">
-        <div className="tc-h"><span className="tc-t">Viajes en esta estimación ({vsEst.length})</span></div>
+        <div className="tc-h">
+          <span className="tc-t">Viajes en esta estimación ({vsEst.length})</span>
+          <div style={{ display:'flex', gap:6 }}>
+            <button className="btn btn-out btn-sm" onClick={imprimirCaratula}><i className="ti ti-printer" />Imprimir</button>
+            <button className="btn btn-out btn-sm" onClick={exportarExcel}><i className="ti ti-table-export" />Excel</button>
+            <button className="btn btn-out btn-sm" onClick={exportarFotosPDF}><i className="ti ti-file-download" />Fotos</button>
+          </div>
+        </div>
         <div className="tw">
           <table>
             <thead><tr><th>TICKET</th><th>TRACTO</th><th>TIPO</th><th>OPERADOR</th><th>M³</th><th>KM</th><th>COBRO</th><th>PAGO</th><th>ESTADO</th><th>FOTOS</th>{est.estado==='abierta'&&p.canConciliar&&<th>QUITAR</th>}</tr></thead>
             <tbody>
               {vsEst.length ? vsEst.map(v => (
-                <tr key={v.id} className="tr">
+                <tr key={v.id} className="tr" onClick={() => setDetalleV(v)} style={{ cursor:'pointer' }}>
                   <td>
                     <span className="mono" style={{ color: 'var(--acc)', fontWeight:700 }}>{v.id}</span>
                     {v.folio2 && <div className="mono" style={{ color: 'var(--muted)', fontSize:9 }}>{v.folio2}</div>}

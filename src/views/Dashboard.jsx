@@ -147,7 +147,7 @@ export default function Dashboard({ onNewTicket, searchQ = '' }) {
                         <td><span className="mono" style={{ color: 'var(--acc)' }}>{v.id}</span></td>
                         <td>{v.tracto}</td>
                         <td className="mono">{vM3(v)}</td>
-                        <td className="mono" style={{ color: 'var(--cobro)' }}>{fmt(vCobro(v))}</td>
+{canVer && <td className="mono" style={{ color: 'var(--cobro)' }}>{fmt(vCobro(v))}</td>}
                         <td>{v.fecha_salida || '—'}</td>
                       </tr>
                     )) : (

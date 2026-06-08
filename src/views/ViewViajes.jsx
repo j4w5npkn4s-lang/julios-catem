@@ -8,6 +8,7 @@ import ModalPago from '../components/ModalPago'
 
 export default function ViewViajes({ onNewTicket, searchQ = '' }) {
   const { viajes, estimaciones, agremiados, vCobro, vPago, vUtil, vM3, fmt, reabrirViaje, perm } = useApp()
+  const p = perm()
   const [fEst, setFEst]       = useState('')
   const [fStatus, setFStatus] = useState('')
   const [fFecha, setFFecha]   = useState('')

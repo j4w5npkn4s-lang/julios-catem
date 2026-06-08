@@ -7,6 +7,7 @@ import Pill from './Pill'
 export default function ModalDetalleViaje({ viaje: v, onClose, onReabrir }) {
   const { vCobro, vPago, vUtil, vM3, fmt, pagos, agremiados, perm, loadAll } = useApp()
   const p = perm()
+  const canVer = p.canVerPrecios
 
   const [showPago, setShowPago]   = useState(false)
   const [showEdit, setShowEdit]   = useState(false)
@@ -232,6 +233,7 @@ _Generado por JSV Tracking_`
               <div style={{ fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 3 }}>M³ Total</div>
               <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 18, fontWeight: 700, color: 'var(--info)' }}>{vM3(v)}</div>
             </div>
+            {canVer && <>
             <div style={{ background: 'var(--bg3)', borderRadius: 8, padding: 10, textAlign: 'center' }}>
               <div style={{ fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 3 }}>Cobro</div>
               <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 16, fontWeight: 700, color: 'var(--cobro)' }}>{fmt(vCobro(v))}</div>
@@ -240,6 +242,7 @@ _Generado por JSV Tracking_`
               <div style={{ fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 3 }}>Pago camp.</div>
               <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 16, fontWeight: 700, color: 'var(--pago)' }}>{fmt(vPago(v))}</div>
             </div>
+            </>}
           </div>
 
           {/* Datos del viaje */}

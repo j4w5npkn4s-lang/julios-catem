@@ -4,11 +4,11 @@ import { supabase } from './supabase'
 const AppContext = createContext(null)
 
 export const ROLES = {
-  admin:        { label: 'Administrador',  canTodo: true,  canRegistrar: true,  canLlegada: true,  canPagar: true,  canConciliar: true,  canConfig: true  },
-  contador:     { label: 'Contador',       canTodo: false, canRegistrar: false, canLlegada: false, canPagar: true,  canConciliar: true,  canConfig: false },
-  aux_contador: { label: 'Aux. Contador',  canTodo: false, canRegistrar: false, canLlegada: true,  canPagar: false, canConciliar: false, canConfig: false },
-  checador:     { label: 'Checador',       canTodo: false, canRegistrar: true,  canLlegada: true,  canPagar: false, canConciliar: false, canConfig: false },
-  supervisor:   { label: 'Supervisor',     canTodo: false, canRegistrar: false, canLlegada: false, canPagar: false, canConciliar: false, canConfig: false },
+  admin:        { label: 'Administrador',  canTodo: true,  canRegistrar: true,  canLlegada: true,  canPagar: true,  canConciliar: true,  canConfig: true,  canVerPrecios: true  },
+  contador:     { label: 'Contador',       canTodo: false, canRegistrar: false, canLlegada: false, canPagar: true,  canConciliar: true,  canConfig: false, canVerPrecios: true  },
+  aux_contador: { label: 'Aux. Contador',  canTodo: false, canRegistrar: false, canLlegada: true,  canPagar: false, canConciliar: false, canConfig: false, canVerPrecios: false },
+  checador:     { label: 'Checador',       canTodo: false, canRegistrar: true,  canLlegada: true,  canPagar: false, canConciliar: false, canConfig: false, canVerPrecios: false },
+  supervisor:   { label: 'Supervisor',     canTodo: false, canRegistrar: false, canLlegada: false, canPagar: false, canConciliar: false, canConfig: false, canVerPrecios: false },
 }
 
 export function AppProvider({ children }) {

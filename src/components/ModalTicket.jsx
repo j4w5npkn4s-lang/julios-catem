@@ -7,6 +7,7 @@ import FotoSlot from '../components/FotoSlot'
 export default function ModalTicket({ onClose, onSaved }) {
   const { addViaje, addCamion, vCobro, vPago, fmt, config, destinos, estimaciones,
           flotilla, agremiados, uploadFoto, perm, today, user } = useApp()
+  const canVer = perm()?.canVerPrecios
   const toast = useToast()
   const [saving, setSaving] = useState(false)
   const [scanActive, setScanActive] = useState(false)

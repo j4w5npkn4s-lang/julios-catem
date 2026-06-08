@@ -518,7 +518,7 @@ function PantallaDetalle({ est, onBack }) {
           <div style={{ display:'flex', gap:6 }}>
             <button className="btn btn-out btn-sm" onClick={imprimirCaratula}><i className="ti ti-printer" />Imprimir</button>
             <button className="btn btn-out btn-sm" onClick={exportarExcel}><i className="ti ti-table-export" />Excel</button>
-            <button className="btn btn-out btn-sm" onClick={exportarFotosPDF}><i className="ti ti-file-download" />Fotos</button>
+            <button className="btn btn-out btn-sm" onClick={exportarFotosPDF}><i className="ti ti-file-download" />Evidencia</button>
           </div>
         </div>
         <div className="tw">

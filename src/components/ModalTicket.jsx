@@ -399,8 +399,14 @@ export default function ModalTicket({ onClose, onSaved }) {
 
         {/* FOTOS */}
         <div className="sdv">Documentos</div>
-        <FotoSlot label={tipo === 'full' ? 'Foto Ticket 1 (Gondola 1)' : 'Foto ticket de salida'} onCapture={setFotoTSal} />
-        {tipo === 'full' && <FotoSlot label="Foto Ticket 2 (Gondola 2)" onCapture={setFotoTSal2} />}
+        {tipo === 'full' ? (
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+            <FotoSlot label="Ticket 1 — Gondola 1" onCapture={setFotoTSal} />
+            <FotoSlot label="Ticket 2 — Gondola 2" onCapture={setFotoTSal2} />
+          </div>
+        ) : (
+          <FotoSlot label="Foto ticket de salida" onCapture={setFotoTSal} />
+        )}
         <FotoSlot label="Foto del tracto / unidad" icon="truck" onCapture={setFotoTracto} />
 
         <div className="fg" style={{ marginTop: 8 }}>

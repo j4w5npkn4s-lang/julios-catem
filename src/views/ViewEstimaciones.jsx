@@ -340,62 +340,96 @@ function PantallaDetalle({ est, onBack }) {
 
   async function exportarFotosPDF() {
     const vsEst = viajes.filter(v => v.estimacion_id === est.id)
-    const canvas = document.createElement('canvas')
-    canvas.width = 794; canvas.height = vsEst.length * 420 + 80
-    const ctx = canvas.getContext('2d')
-    ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, canvas.width, canvas.height)
+    if (!vsEst.length) return
+
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+    const W = 210, margin = 10, colW = (W - margin*2 - 5) / 2
 
     const loadImg = url => new Promise(res => {
       if (!url) { res(null); return }
-      const img = new Image(); img.crossOrigin='anonymous'
-      img.onload=()=>res(img); img.onerror=()=>res(null); img.src=url
+      const img = new Image(); img.crossOrigin = 'anonymous'
+      img.onload = () => {
+        const c = document.createElement('canvas')
+        c.width = img.width; c.height = img.height
+        c.getContext('2d').drawImage(img, 0, 0)
+        res(c.toDataURL('image/jpeg', 0.85))
+      }
+      img.onerror = () => res(null)
+      img.src = url
     })
 
-    ctx.fillStyle='#111318'; ctx.fillRect(0,0,794,50)
-    ctx.fillStyle='#F59E0B'; ctx.font='bold 16px monospace'
-    ctx.fillText(`${est.id} — Fotos de tickets`, 20, 32)
+    for (let i = 0; i < vsEst.length; i++) {
+      const v = vsEst[i]
+      if (i > 0) pdf.addPage()
 
-    let y = 60
-    for (const v of vsEst) {
-      ctx.fillStyle='#F3F4F6'; ctx.fillRect(10, y, 774, 400)
-      ctx.fillStyle='#111318'; ctx.font='bold 13px monospace'
-      ctx.fillText(`${v.id}${v.folio2?' / '+v.folio2:''} · ${v.tracto} · ${v.operador} · ${v.fecha_salida||''}`, 20, y+22)
-      ctx.fillStyle='#6B7280'; ctx.font='11px sans-serif'
-      ctx.fillText(`${v.origen||'—'} → ${v.destino||'—'} · ${vM3(v)} m³`, 20, y+40)
+      // Header
+      pdf.setFillColor(17, 19, 24)
+      pdf.rect(0, 0, W, 18, 'F')
+      pdf.setTextColor(245, 158, 11)
+      pdf.setFontSize(11); pdf.setFont('helvetica','bold')
+      pdf.text(`${est.id} — Fotos de tickets`, margin, 8)
+      pdf.setTextColor(200, 200, 200)
+      pdf.setFontSize(8); pdf.setFont('helvetica','normal')
+      pdf.text(`${i+1} de ${vsEst.length}`, W - margin, 8, { align:'right' })
 
+      // Viaje info
+      pdf.setTextColor(17, 19, 24)
+      pdf.setFontSize(12); pdf.setFont('helvetica','bold')
+      pdf.text(`${v.id}${v.folio2 ? ' / '+v.folio2 : ''}`, margin, 26)
+      pdf.setFontSize(9); pdf.setFont('helvetica','normal')
+      pdf.setTextColor(80, 80, 80)
+      pdf.text(`${v.tipo?.toUpperCase()} · Tracto: ${v.tracto} · ${agremiados?.find(a=>a.id===v.agremiado_id)?.nombre||v.operador||'—'}`, margin, 32)
+      pdf.text(`${v.origen||'—'} → ${v.destino||'—'} · ${vM3(v)} m³ · ${v.fecha_salida||'—'} ${v.hora_salida||''}`, margin, 37)
+
+      // Separator
+      pdf.setDrawColor(230,230,230); pdf.line(margin, 40, W-margin, 40)
+
+      // Photos
       const imgSal  = await loadImg(v.foto_ticket_salida_url)
       const imgLleg = await loadImg(v.foto_ticket_llegada_url)
-      const drawPhoto = (img, x, iy, label, hasRecord) => {
-        ctx.fillStyle = img ? '#E5E7EB' : hasRecord ? '#FEF3C7' : '#FEE2E2'
-        ctx.fillRect(x, iy, 370, 310)
-        ctx.fillStyle='#374151'; ctx.font='bold 11px sans-serif'; ctx.fillText(label, x+10, iy+20)
-        if (img) {
-          const ratio = Math.min(360/img.width, 280/img.height)
-          const w=img.width*ratio, h=img.height*ratio
-          ctx.drawImage(img, x+(370-w)/2, iy+25+(280-h)/2, w, h)
-        } else {
-          ctx.fillStyle = hasRecord ? '#92400E' : '#991B1B'
-          ctx.font = 'bold 13px sans-serif'
-          const msg = hasRecord ? '⚠ Sin foto adjunta' : '✗ NO EXISTE TICKET DE LLEGADA'
-          ctx.fillText(msg, x + (370 - ctx.measureText(msg).width)/2, iy+165)
-          if (!hasRecord) {
-            ctx.fillStyle='#DC2626'; ctx.font='11px sans-serif'
-            const sub = 'Pendiente de registrar'
-            ctx.fillText(sub, x + (370 - ctx.measureText(sub).width)/2, iy+185)
-          }
+      const photoH  = 110
+      const photoY  = 44
+
+      // Ticket Salida
+      pdf.setFontSize(8); pdf.setFont('helvetica','bold')
+      pdf.setTextColor(17,19,24)
+      pdf.text('TICKET SALIDA', margin, photoY + 5)
+      if (imgSal) {
+        pdf.addImage(imgSal, 'JPEG', margin, photoY + 7, colW, photoH)
+      } else {
+        pdf.setFillColor(254, 226, 226)
+        pdf.rect(margin, photoY + 7, colW, photoH, 'F')
+        pdf.setTextColor(153, 27, 27); pdf.setFontSize(9)
+        pdf.text('Sin foto de ticket salida', margin + colW/2, photoY + 7 + photoH/2, { align:'center' })
+      }
+
+      // Ticket Llegada
+      const col2X = margin + colW + 5
+      pdf.setFontSize(8); pdf.setFont('helvetica','bold')
+      pdf.setTextColor(17,19,24)
+      pdf.text('TICKET LLEGADA', col2X, photoY + 5)
+      if (imgLleg) {
+        pdf.addImage(imgLleg, 'JPEG', col2X, photoY + 7, colW, photoH)
+      } else {
+        pdf.setFillColor(v.fecha_llegada ? 254,243,199 : 254,226,226)
+        pdf.rect(col2X, photoY + 7, colW, photoH, 'F')
+        pdf.setTextColor(v.fecha_llegada ? 146,64,14 : 153,27,27)
+        pdf.setFontSize(9)
+        const msg = v.fecha_llegada ? 'Sin foto adjunta' : 'NO EXISTE TICKET DE LLEGADA'
+        pdf.text(msg, col2X + colW/2, photoY + 7 + photoH/2 - 4, { align:'center' })
+        if (!v.fecha_llegada) {
+          pdf.setFontSize(8)
+          pdf.text('Pendiente de registrar', col2X + colW/2, photoY + 7 + photoH/2 + 6, { align:'center' })
         }
       }
-      drawPhoto(imgSal,  14,  y+50, '📄 TICKET SALIDA',  !!v.foto_ticket_salida)
-      drawPhoto(imgLleg, 394, y+50, '📄 TICKET LLEGADA', !!v.fecha_llegada)
-      y += 420
+
+      // Footer
+      pdf.setDrawColor(230,230,230); pdf.line(margin, 165, W-margin, 165)
+      pdf.setFontSize(7); pdf.setTextColor(150,150,150); pdf.setFont('helvetica','normal')
+      pdf.text(`JSV Tracking · ${est.id} · Generado: ${new Date().toLocaleString('es-MX')}`, W/2, 170, { align:'center' })
     }
 
-    canvas.toBlob(blob => {
-      const url = URL.createObjectURL(blob)
-      const a   = document.createElement('a')
-      a.href=url; a.download=`${est.id}-fotos.png`; a.click()
-      URL.revokeObjectURL(url)
-    }, 'image/png')
+    pdf.save(`${est.id}-fotos.pdf`)
   }
 
   async function handleCerrar() {

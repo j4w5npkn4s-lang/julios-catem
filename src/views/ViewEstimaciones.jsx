@@ -489,7 +489,7 @@ function PantallaDetalle({ est, onBack }) {
         </div>
         <div className="tw">
           <table>
-            <thead><tr><th>TICKET</th><th>TRACTO</th><th>TIPO</th><th>OPERADOR</th><th>M³</th><th>KM</th><th>COBRO</th><th>PAGO</th><th>ESTADO</th><th>FOTOS</th>{est.estado==='abierta'&&p.canConciliar&&<th>QUITAR</th>}</tr></thead>
+            <thead><tr><th>TICKET</th><th>TRACTO</th><th>TIPO</th><th>AGREMIADO</th><th>M³</th><th>KM</th><th>COBRO</th><th>PAGO</th><th>ESTADO</th><th>FOTOS</th>{est.estado==='abierta'&&p.canConciliar&&<th>QUITAR</th>}</tr></thead>
             <tbody>
               {vsEst.length ? vsEst.map(v => (
                 <tr key={v.id} className="tr" onClick={() => setDetalleV(v)} style={{ cursor:'pointer' }}>
@@ -499,7 +499,7 @@ function PantallaDetalle({ est, onBack }) {
                   </td>
                   <td><b>{v.tracto}</b></td>
                   <td><Pill s={v.tipo} /></td>
-                  <td style={{ fontSize: 10 }}>{v.operador}</td>
+                  <td style={{ fontSize: 10 }}>{agremiados?.find(a=>a.id===v.agremiado_id)?.nombre||v.operador||'—'}</td>
                   <td className="mono">{vM3(v)}</td>
                   <td className="mono">{v.km}</td>
                   <td className="mono" style={{ color: 'var(--cobro)' }}>{fmt(vCobro(v))}</td>

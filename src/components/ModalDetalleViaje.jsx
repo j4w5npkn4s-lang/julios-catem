@@ -329,7 +329,7 @@ _Generado por JSV Tracking_`
           <button className="btn btn-out btn-sm" onClick={compartirViaje} disabled={generando}>
             <i className="ti ti-brand-whatsapp" />{generando ? 'Generando...' : 'Compartir'}
           </button>
-          {p.canTodo && (
+          {(p.canTodo || p.canRegistrar) && p.canConfig !== false && p.canTodo && (
             <button className="btn btn-out btn-sm" onClick={() => setShowEdit(true)}>
               <i className="ti ti-edit" />Editar ticket
             </button>

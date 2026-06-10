@@ -87,17 +87,21 @@ export default function HomeChecador({ onNewTicket }) {
           <span style={{ marginLeft: 'auto', background: 'var(--bg3)', color: 'var(--muted)', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 10 }}>{hoy.length}</span>
         </div>
         {hoy.length ? hoy.map(v => (
-          <div key={v.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
+          <div key={v.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
+            onClick={() => setDetalleViaje(v)}>
             <div style={{ flex: 1 }}>
               <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 12, fontWeight: 700, color: 'var(--acc)' }}>{v.id}</div>
               <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>{v.tracto} · {v.operador}</div>
             </div>
-            <div style={{ textAlign: 'right' }}>
+            <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
               <Pill s={v.estado} />
-              <div style={{ display: 'flex', gap: 3, marginTop: 4, justifyContent: 'flex-end' }}>
+              <div style={{ display: 'flex', gap: 3 }}>
                 <span className={`pill ${v.foto_ticket_salida ? 'pg' : 'pr'}`} style={{ fontSize: 8 }}>{v.foto_ticket_salida ? '✓' : '✗'} T.Sal</span>
                 <span className={`pill ${v.foto_tracto ? 'pg' : 'pr'}`} style={{ fontSize: 8 }}>{v.foto_tracto ? '✓' : '✗'} Tracto</span>
               </div>
+              <button className="btn btn-ok btn-xs" onClick={e => { e.stopPropagation(); setDetalleViaje(v) }}>
+                <i className="ti ti-share" />Compartir
+              </button>
             </div>
           </div>
         )) : (

@@ -25,6 +25,8 @@ export default function ModalEditarViaje({ viaje: v, onClose, onSaved }) {
   const [hSal, setHSal]       = useState(v.hora_salida || '')
   const [fLleg, setFLleg]     = useState(v.fecha_llegada || '')
   const [hLleg, setHLleg]     = useState(v.hora_llegada || '')
+  const [fLleg2, setFLleg2]   = useState(v.fecha_llegada2 || '')
+  const [hLleg2, setHLleg2]   = useState(v.hora_llegada2 || '')
   const [operador, setOper]   = useState(v.operador || '')
   const [origen, setOrigen]   = useState(v.origen || '')
   const [destino, setDestino] = useState(v.destino || '')
@@ -37,6 +39,7 @@ export default function ModalEditarViaje({ viaje: v, onClose, onSaved }) {
   const [fotoTSal, setFotoTSal]   = useState(null)
   const [fotoTracto, setFotoTracto] = useState(null)
   const [fotoLleg, setFotoLleg]   = useState(null)
+  const [fotoLleg2, setFotoLleg2] = useState(null)
 
   async function handleSave() {
     if (!tracto.trim()) return toast('Placa tracto requerida', 'err')
@@ -49,6 +52,8 @@ export default function ModalEditarViaje({ viaje: v, onClose, onSaved }) {
       if (fotoTSal)   urlTSal   = await uploadFoto(fotoTSal,   `tickets/${bid}`)
       if (fotoTracto) urlTracto = await uploadFoto(fotoTracto, `tickets/${bid}`)
       if (fotoLleg)   urlLleg   = await uploadFoto(fotoLleg,   `tickets/${bid}`)
+      let urlLleg2 = v.foto_ticket2_url
+      if (fotoLleg2)  urlLleg2  = await uploadFoto(fotoLleg2,  `tickets/${bid}-llegada2`)
 
       // Si cambió el folio (ID primario), insertar nuevo y borrar el viejo
       const folioChanged = bid.trim() !== v.id
@@ -209,9 +214,15 @@ export default function ModalEditarViaje({ viaje: v, onClose, onSaved }) {
         <div className="fg"><label>Hora salida</label><input type="time" value={hSal} onChange={e => setHSal(e.target.value)} /></div>
       </div>
       <div className="row2">
-        <div className="fg"><label>Fecha llegada</label><input type="date" value={fLleg} onChange={e => setFLleg(e.target.value)} /></div>
-        <div className="fg"><label>Hora llegada</label><input type="time" value={hLleg} onChange={e => setHLleg(e.target.value)} /></div>
+        <div className="fg"><label>{tipo==='full'?'Fecha llegada G1':'Fecha llegada'}</label><input type="date" value={fLleg} onChange={e => setFLleg(e.target.value)} /></div>
+        <div className="fg"><label>{tipo==='full'?'Hora llegada G1':'Hora llegada'}</label><input type="time" value={hLleg} onChange={e => setHLleg(e.target.value)} /></div>
       </div>
+      {tipo === 'full' && (
+        <div className="row2">
+          <div className="fg"><label>Fecha llegada G2</label><input type="date" value={fLleg2} onChange={e => setFLleg2(e.target.value)} /></div>
+          <div className="fg"><label>Hora llegada G2</label><input type="time" value={hLleg2} onChange={e => setHLleg2(e.target.value)} /></div>
+        </div>
+      )}
 
       {/* ESTADO Y ESTIMACIÓN */}
       <div className="row2">
@@ -246,9 +257,15 @@ export default function ModalEditarViaje({ viaje: v, onClose, onSaved }) {
           <FotoSlot label="Reemplazar foto tracto" icon="truck" onCapture={setFotoTracto} done={!!fotoTracto} />
         </div>
         <div>
-          {v.foto_ticket_llegada_url && <a href={v.foto_ticket_llegada_url} target="_blank" style={{ fontSize:10, color:'var(--info)', display:'block', marginBottom:5 }}>Ver ticket llegada actual →</a>}
-          <FotoSlot label="Reemplazar ticket llegada" onCapture={setFotoLleg} done={!!fotoLleg} />
+          {v.foto_ticket_llegada_url && <a href={v.foto_ticket_llegada_url} target="_blank" style={{ fontSize:10, color:'var(--info)', display:'block', marginBottom:5 }}>Ver ticket llegada 1 →</a>}
+          <FotoSlot label={tipo==='full'?'Ticket llegada 1':'Reemplazar ticket llegada'} onCapture={setFotoLleg} done={!!fotoLleg} />
         </div>
+        {tipo === 'full' && (
+          <div>
+            {v.foto_ticket2_url && <a href={v.foto_ticket2_url} target="_blank" style={{ fontSize:10, color:'var(--info)', display:'block', marginBottom:5 }}>Ver ticket llegada 2 →</a>}
+            <FotoSlot label="Ticket llegada 2" onCapture={setFotoLleg2} done={!!fotoLleg2} />
+          </div>
+        )}
       </div>
 
       <div className="fg" style={{ marginTop:10 }}>

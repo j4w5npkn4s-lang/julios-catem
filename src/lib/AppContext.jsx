@@ -115,10 +115,11 @@ export function AppProvider({ children }) {
     if (error) throw error
   }
 
-  async function registrarLlegada(id, fecha, hora, fotoUrl) {
+  async function registrarLlegada(id, fecha, hora, fotoUrl, fotoUrl2) {
     await updateViaje(id, {
       fecha_llegada: fecha, hora_llegada: hora || null,
       foto_ticket_llegada: !!fotoUrl, foto_ticket_llegada_url: fotoUrl || null,
+      foto_ticket2_url: fotoUrl2 || null,
       estado: 'pendiente_conciliar',
     })
     await loadAll()

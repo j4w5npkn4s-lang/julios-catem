@@ -9,16 +9,19 @@ export default function ModalLlegada({ viaje, onClose, onSaved }) {
   const toast = useToast()
   const [fecha, setFecha]   = useState('')
   const [hora, setHora]     = useState('')
-  const [foto, setFoto]     = useState(null)
+  const [foto1, setFoto1]   = useState(null)
+  const [foto2, setFoto2]   = useState(null)
   const [saving, setSaving] = useState(false)
+  const isFull = viaje?.tipo === 'full'
 
   async function handleSave() {
     if (!fecha) return toast('Ingresa la fecha de llegada', 'err')
     setSaving(true)
     try {
-      let url = null
-      if (foto) url = await uploadFoto(foto, `llegadas/${viaje.id}`)
-      await registrarLlegada(viaje.id, fecha, hora || null, url)
+      let url1 = null, url2 = null
+      if (foto1) url1 = await uploadFoto(foto1, `llegadas/${viaje.id}`)
+      if (foto2) url2 = await uploadFoto(foto2, `llegadas/${viaje.folio2||viaje.id}-2`)
+      await registrarLlegada(viaje.id, fecha, hora || null, url1, url2)
       toast(`Ticket ${viaje.id} · Llegada registrada ✓`, 'ok')
       onSaved?.()
       onClose()
@@ -39,15 +42,24 @@ export default function ModalLlegada({ viaje, onClose, onSaved }) {
       </>}
     >
       <div style={{ background: 'rgba(59,130,246,.1)', border: '1px solid rgba(59,130,246,.2)', borderRadius: 7, padding: '9px 12px', marginBottom: 12, fontSize: 11, color: '#60A5FA' }}>
-        <b>Ticket {viaje.id}</b> · {viaje.tracto} · {viaje.operador}<br />
-        <span style={{ color: 'var(--muted)' }}>Salida: {viaje.fecha_salida || '—'} {viaje.hora_salida || ''} · {viaje.mina || '—'}</span><br /><br />
+        <b>Ticket {viaje.id}{viaje.folio2 ? ' / ' + viaje.folio2 : ''}</b> · {viaje.tracto} · {viaje.operador}<br />
+        <span style={{ color: 'var(--muted)' }}>Salida: {viaje.fecha_salida || '—'} {viaje.hora_salida || ''}</span><br /><br />
         El camión puede haber llegado hoy o días antes. <b>Ingresa la fecha real de llegada.</b>
       </div>
       <div className="row2">
         <div className="fg"><label>Fecha llegada</label><input type="date" value={fecha} onChange={e => setFecha(e.target.value)} /></div>
         <div className="fg"><label>Hora llegada</label><input type="time" value={hora} onChange={e => setHora(e.target.value)} /></div>
       </div>
-      <FotoSlot label="Foto del ticket de término / descarga" onCapture={setFoto} />
+
+      {isFull ? (
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+          <FotoSlot label={`Ticket llegada 1 (${viaje.id})`} onCapture={setFoto1} />
+          <FotoSlot label={`Ticket llegada 2 (${viaje.folio2||'Gondola 2'})`} onCapture={setFoto2} />
+        </div>
+      ) : (
+        <FotoSlot label="Foto del ticket de término / descarga" onCapture={setFoto1} />
+      )}
+
       <div className="fg" style={{ marginTop: 9 }}>
         <label>Observaciones</label>
         <textarea rows={2} placeholder="..." />

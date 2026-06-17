@@ -67,12 +67,17 @@ export default function HomeChecador({ onNewTicket }) {
             {resultados.map(v => (
               <div key={v.id} data-vid={v.id}
                 style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 10, background: 'var(--bg3)', borderRadius: 8, marginBottom: 6, cursor: 'pointer' }}
-                onClick={() => { /* open detail */ }}>
+                onClick={() => setDetalleViaje(v)}>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 12, fontWeight: 700, color: 'var(--acc)' }}>{v.id}</div>
                   <div style={{ fontSize: 11, color: 'var(--muted)' }}>{v.tracto} · {v.operador} · {v.fecha_salida || '—'}</div>
                 </div>
-                <Pill s={v.estado} />
+                <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4 }}>
+                  <Pill s={v.estado} />
+                  <button className="btn btn-ok btn-xs" onClick={e => { e.stopPropagation(); setDetalleViaje(v) }}>
+                    <i className="ti ti-share" />Compartir
+                  </button>
+                </div>
               </div>
             ))}
           </div>

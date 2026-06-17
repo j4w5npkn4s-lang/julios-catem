@@ -343,6 +343,7 @@ function PantallaDetalle({ est, onBack }) {
     const vsEst = viajes.filter(v => v.estimacion_id === est.id)
     if (!vsEst.length) { toast('Sin viajes en esta estimación', 'warn'); return }
     try {
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
     const W = 210, margin = 10, colW = (W - margin*2 - 5) / 2
 
     const loadImg = url => new Promise(res => {

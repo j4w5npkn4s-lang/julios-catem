@@ -56,9 +56,12 @@ export function ViewPagos({ searchQ = '' }) {
     setSelec(selecAllSelected ? new Set() : new Set(vsFiltrados.map(v=>v.id)))
   }
 
+  // selecViajes: seleccionados visibles con el filtro actual (para el checkbox de cabecera)
   const selecViajes = vsFiltrados.filter(v => selec.has(v.id))
   const selecAllSelected = vsFiltrados.length > 0 && selecViajes.length === vsFiltrados.length
-  const totalPago   = selecViajes.reduce((a,v) => a + vPago(v), 0)
+  // selecTodos: TODOS los seleccionados acumulados, sin importar el filtro/busqueda actual (para el resumen de pago)
+  const selecTodos = viajes.filter(v => selec.has(v.id))
+  const totalPago   = selecTodos.reduce((a,v) => a + vPago(v), 0)
 
   // Fotos status
   const fotosBadge = v => {
@@ -179,27 +182,46 @@ export function ViewPagos({ searchQ = '' }) {
             </tbody>
           </table>
         </div>
-        {/* BARRA TOTAL SELECCIONADOS */}
-        {selecViajes.length > 0 && (
-          <div style={{ padding:'14px 16px', borderTop:'2px solid var(--border)', background:'var(--bg3)', display:'flex', alignItems:'center', gap:16, flexWrap:'wrap' }}>
-            <div style={{ fontSize:12, color:'var(--muted)' }}>
-              <b style={{ color:'var(--text)', fontSize:14 }}>{selecViajes.length}</b> ticket{selecViajes.length!==1?'s':''} seleccionado{selecViajes.length!==1?'s':''}
+        {/* RESUMEN ACUMULADO DE SELECCIONADOS (persiste aunque cambies filtro/busqueda) */}
+        {selecTodos.length > 0 && (
+          <div style={{ borderTop:'2px solid var(--border)', background:'var(--bg3)' }}>
+            {/* Lista de tickets seleccionados con agremiado */}
+            <div style={{ maxHeight: 160, overflowY: 'auto', padding: '8px 16px' }}>
+              {selecTodos.map(v => (
+                <div key={v.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'5px 0', borderBottom:'1px solid var(--border)', fontSize:11 }}>
+                  <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+                    <span style={{ fontFamily:"'Space Mono',monospace", color:'var(--acc)', fontWeight:700 }}>{v.id}</span>
+                    <span style={{ color:'var(--muted)' }}>{getNombreAgremiado(v.agremiado_id)} · {v.tracto}</span>
+                  </div>
+                  <div style={{ display:'flex', gap:10, alignItems:'center' }}>
+                    <span style={{ fontFamily:"'Space Mono',monospace", color:'var(--pago)' }}>{fmt(vPago(v))}</span>
+                    <button className="btn btn-out btn-xs" onClick={() => toggleSelec(v.id)} title="Quitar de la seleccion">
+                      <i className="ti ti-x" />
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
-            <div style={{ fontSize:12 }}>
-              M³: <b style={{ fontFamily:"'Space Mono',monospace" }}>{selecViajes.reduce((a,v)=>a+vM3(v),0).toFixed(2)}</b>
-            </div>
-            <div style={{ fontFamily:"'Space Mono',monospace", fontSize:18, fontWeight:700, color:'var(--pago)' }}>
-              Total a pagar: {fmt(totalPago)}
-            </div>
-            <div style={{ flex:1 }} />
-            <button className="btn btn-out btn-sm" onClick={() => setSelec(new Set())}>
-              <i className="ti ti-x" />Limpiar
-            </button>
-            {p.canPagar && (
-              <button className="btn btn-ok" style={{ padding:'10px 20px', fontSize:13 }} onClick={() => setPagoVs(selecViajes)}>
-                <i className="ti ti-cash" style={{ fontSize:16 }} />Pagar {selecViajes.length} ticket{selecViajes.length!==1?'s':''}
+            <div style={{ padding:'14px 16px', borderTop:'1px solid var(--border)', display:'flex', alignItems:'center', gap:16, flexWrap:'wrap' }}>
+              <div style={{ fontSize:12, color:'var(--muted)' }}>
+                <b style={{ color:'var(--text)', fontSize:14 }}>{selecTodos.length}</b> ticket{selecTodos.length!==1?'s':''} seleccionado{selecTodos.length!==1?'s':''}
+              </div>
+              <div style={{ fontSize:12 }}>
+                M³: <b style={{ fontFamily:"'Space Mono',monospace" }}>{selecTodos.reduce((a,v)=>a+vM3(v),0).toFixed(2)}</b>
+              </div>
+              <div style={{ fontFamily:"'Space Mono',monospace", fontSize:18, fontWeight:700, color:'var(--pago)' }}>
+                Total a pagar: {fmt(totalPago)}
+              </div>
+              <div style={{ flex:1 }} />
+              <button className="btn btn-out btn-sm" onClick={() => setSelec(new Set())}>
+                <i className="ti ti-x" />Limpiar todo
               </button>
-            )}
+              {p.canPagar && (
+                <button className="btn btn-ok" style={{ padding:'10px 20px', fontSize:13 }} onClick={() => setPagoVs(selecTodos)}>
+                  <i className="ti ti-cash" style={{ fontSize:16 }} />Pagar {selecTodos.length} ticket{selecTodos.length!==1?'s':''}
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>

@@ -19,8 +19,6 @@ export default function ViewViajes({ onNewTicket, searchQ = '' }) {
   const [editarV, setEditarV]   = useState(null)
   const [pagoV, setPagoV]     = useState(null)
 
-  const p = perm() || {}
-
   function exportarExcel(rows) {
     const headers = ['Folio','Gondola','M³','Tipo','Tracto','KM','Origen','Destino','Operador','Agremiado','Fecha Salida','Hora Salida','Fecha Llegada','Estado','Estimacion','Cobro','Pago']
     const data = []

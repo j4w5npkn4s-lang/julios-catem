@@ -411,9 +411,9 @@ function PantallaDetalle({ est, onBack }) {
       if (imgLleg) {
         pdf.addImage(imgLleg, 'JPEG', col2X, photoY + 7, colW, photoH)
       } else {
-        pdf.setFillColor(v.fecha_llegada ? 254,243,199 : 254,226,226)
+        if (v.fecha_llegada) pdf.setFillColor(254,243,199); else pdf.setFillColor(254,226,226)
         pdf.rect(col2X, photoY + 7, colW, photoH, 'F')
-        pdf.setTextColor(v.fecha_llegada ? 146,64,14 : 153,27,27)
+        if (v.fecha_llegada) pdf.setTextColor(146,64,14); else pdf.setTextColor(153,27,27)
         pdf.setFontSize(9)
         const msg = v.fecha_llegada ? 'Sin foto adjunta' : 'NO EXISTE TICKET DE LLEGADA'
         pdf.text(msg, col2X + colW/2, photoY + 7 + photoH/2 - 4, { align:'center' })

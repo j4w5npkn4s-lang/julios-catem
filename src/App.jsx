@@ -151,7 +151,7 @@ function AppInner() {
       case 'viajes':     return <ViewViajes onNewTicket={() => setShowTicket(true)} searchQ={searchQ} />
       case 'flotilla':   return <ViewFlotilla />
       case 'agremiados': return <ViewAgremiados />
-      case 'est':        return <ViewEstimaciones />
+      case 'est':        return <ViewEstimaciones searchQ={searchQ} />
       case 'pagos':      return <ViewPagos />
       case 'reportes':   return <ViewReportes />
       case 'config':     return <ViewConfig />

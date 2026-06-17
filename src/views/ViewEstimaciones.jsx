@@ -165,7 +165,7 @@ function PantallaEstimaciones({ anio, onBack, onSelectEst }) {
 }
 
 // ── PANTALLA 3: DETALLE ESTIMACIÓN ───────────────────────────────
-function PantallaDetalle({ est, onBack }) {
+function PantallaDetalle({ est, onBack, searchQ = '' }) {
   const { viajes, estimaciones, agremiados, vCobro, vPago, vM3, fmt, updateViaje, uploadFoto,
           supabase: _s, perm, loadAll } = useApp()
   const toast = useToast()
@@ -182,6 +182,13 @@ function PantallaDetalle({ est, onBack }) {
 
   // Viajes de esta estimación
   const vsEst = viajes.filter(v => v.estimacion_id === est.id)
+  // Filtro de busqueda del topbar aplicado solo a la tabla visible (no afecta totales)
+  const vsEstVisible = !searchQ ? vsEst : vsEst.filter(v => {
+    const q = searchQ.toLowerCase()
+    const ag = agremiados?.find(a=>a.id===v.agremiado_id)?.nombre || ''
+    const haystack = `${v.id} ${v.folio2||''} ${v.tracto} ${v.operador||''} ${ag}`.toLowerCase()
+    return haystack.includes(q)
+  })
   // Cuenta tickets reales (Full = 2 folios, Sencillo = 1)
   const countViajes = arr => arr.reduce((a,v) => a + (v.tipo === 'full' ? 2 : 1), 0)
   // Viajes pendientes de conciliar (para agregar)
@@ -541,7 +548,7 @@ function PantallaDetalle({ est, onBack }) {
       {/* Tabla viajes */}
       <div className="tc">
         <div className="tc-h">
-          <span className="tc-t">Viajes en esta estimación ({countViajes(vsEst)})</span>
+          <span className="tc-t">Viajes en esta estimación ({countViajes(vsEst)}){searchQ ? ` · ${countViajes(vsEstVisible)} con "${searchQ}"` : ''}</span>
           <div style={{ display:'flex', gap:6 }}>
             <button className="btn btn-out btn-sm" onClick={imprimirCaratula}><i className="ti ti-printer" />Imprimir</button>
             <button className="btn btn-out btn-sm" onClick={exportarExcel}><i className="ti ti-table-export" />Excel</button>
@@ -555,7 +562,7 @@ function PantallaDetalle({ est, onBack }) {
           <table>
             <thead><tr><th>TICKET</th><th>TRACTO</th><th>TIPO</th><th>AGREMIADO</th><th>M³</th><th>KM</th><th>COBRO</th><th>PAGO</th><th>ESTADO</th><th>FOTOS</th>{est.estado==='abierta'&&p.canConciliar&&<th>QUITAR</th>}</tr></thead>
             <tbody>
-              {vsEst.length ? vsEst.map(v => (
+              {vsEstVisible.length ? vsEstVisible.map(v => (
                 <tr key={v.id} className="tr" onClick={() => setDetalleV(v)} style={{ cursor:'pointer' }}>
                   <td>
                     <span className="mono" style={{ color: 'var(--acc)', fontWeight:700 }}>{v.id}</span>
@@ -578,7 +585,7 @@ function PantallaDetalle({ est, onBack }) {
                   )}
                 </tr>
               )) : (
-                <tr><td colSpan={11} style={{ textAlign:'center', padding: 20, color: 'var(--muted)' }}>Sin viajes — usa "Agregar viajes" para incluirlos</td></tr>
+                <tr><td colSpan={11} style={{ textAlign:'center', padding: 20, color: 'var(--muted)' }}>{searchQ ? `Sin resultados para "${searchQ}"` : 'Sin viajes — usa "Agregar viajes" para incluirlos'}</td></tr>
               )}
             </tbody>
           </table>
@@ -679,11 +686,11 @@ function PantallaDetalle({ est, onBack }) {
 }
 
 // ── VISTA PRINCIPAL ───────────────────────────────────────────────
-export default function ViewEstimaciones() {
+export default function ViewEstimaciones({ searchQ = '' }) {
   const [anio, setAnio]   = useState(null)
   const [est, setEst]     = useState(null)
 
-  if (est)  return <PantallaDetalle est={est} onBack={() => setEst(null)} />
+  if (est)  return <PantallaDetalle est={est} onBack={() => setEst(null)} searchQ={searchQ} />
   if (anio) return <PantallaEstimaciones anio={anio} onBack={() => setAnio(null)} onSelectEst={setEst} />
   return <PantallaAnios onSelectAnio={setAnio} />
 }

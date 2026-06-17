@@ -132,7 +132,7 @@ function PantallaEstimaciones({ anio, onBack, onSelectEst }) {
                 </div>
               )}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--border)' }}>
-                <div><div style={{ fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase' }}>Viajes</div><div style={{ fontSize: 18, fontWeight: 700 }}>{vs.length}</div></div>
+                <div><div style={{ fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase' }}>Viajes</div><div style={{ fontSize: 18, fontWeight: 700 }}>{vs.reduce((a,v)=>a+(v.tipo==='full'?2:1),0)}</div></div>
                 <div><div style={{ fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase' }}>M³</div><div style={{ fontSize: 18, fontWeight: 700 }}>{m3.toFixed(0)}</div></div>
                 <div><div style={{ fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase' }}>Cobro</div><div style={{ fontSize: 14, fontWeight: 700, color: 'var(--cobro)' }}>{fmt(cob)}</div></div>
               </div>
@@ -182,6 +182,8 @@ function PantallaDetalle({ est, onBack }) {
 
   // Viajes de esta estimación
   const vsEst = viajes.filter(v => v.estimacion_id === est.id)
+  // Cuenta tickets reales (Full = 2 folios, Sencillo = 1)
+  const countViajes = arr => arr.reduce((a,v) => a + (v.tipo === 'full' ? 2 : 1), 0)
   // Viajes pendientes de conciliar (para agregar)
   const vsPend = viajes.filter(v => {
     if (!['abierto','pendiente_conciliar'].includes(v.estado)) return false
@@ -274,7 +276,7 @@ function PantallaDetalle({ est, onBack }) {
     const porAgr = (agremiados||[]).map(a => {
       const vs = vsEst.filter(v=>v.agremiado_id===a.id)
       if (!vs.length) return null
-      return { nombre:a.nombre, viajes:vs.length, m3:vs.reduce((x,v)=>x+vM3(v),0), cobro:vs.reduce((x,v)=>x+vCobro(v),0), pago:vs.reduce((x,v)=>x+vPago(v),0) }
+      return { nombre:a.nombre, viajes:countViajes(vs), m3:vs.reduce((x,v)=>x+vM3(v),0), cobro:vs.reduce((x,v)=>x+vCobro(v),0), pago:vs.reduce((x,v)=>x+vPago(v),0) }
     }).filter(Boolean)
 
     const rows = vsEst.map(v => `
@@ -331,7 +333,7 @@ function PantallaDetalle({ est, onBack }) {
     </div>
 
     <div class="kpis">
-      <div class="kpi"><div class="kpi-l">Viajes</div><div class="kpi-v" style="color:#b45309">${vsEst.length}</div><div style="font-size:10px;color:#6b7280">${senc} senc · ${full} full</div></div>
+      <div class="kpi"><div class="kpi-l">Viajes</div><div class="kpi-v" style="color:#b45309">${countViajes(vsEst)}</div><div style="font-size:10px;color:#6b7280">${senc} senc · ${full} full</div></div>
       <div class="kpi"><div class="kpi-l">M³ Total</div><div class="kpi-v" style="color:#1d4ed8">${totalM3.toFixed(2)}</div></div>
       <div class="kpi"><div class="kpi-l">Cobro Total</div><div class="kpi-v" style="color:#166534">${fmt(totalCob)}</div></div>
       <div class="kpi"><div class="kpi-l">Pago Camioneros</div><div class="kpi-v" style="color:#991b1b">${fmt(totalPag)}</div></div>
@@ -346,7 +348,7 @@ function PantallaDetalle({ est, onBack }) {
     <table><thead><tr><th>Agremiado</th><th>Viajes</th><th>M³</th><th>Cobro</th><th>Pago</th><th>Utilidad</th></tr></thead>
     <tbody>${agRows}</tbody></table>
 
-    <h2>Detalle de viajes (${vsEst.length})</h2>
+    <h2>Detalle de viajes (${countViajes(vsEst)})</h2>
     <table><thead><tr><th>Ticket</th><th>Tipo</th><th>Tracto</th><th>Agremiado</th><th>M³</th><th>KM</th><th>Cobro</th><th>Pago</th><th>Estado</th></tr></thead>
     <tbody>${rows}</tbody></table>
 
@@ -507,7 +509,7 @@ function PantallaDetalle({ est, onBack }) {
 
       {/* KPIs */}
       <div className="kpis kpis-4" style={{ marginBottom: 14 }}>
-        <div className="kpi acc"><div className="kpi-l">Viajes</div><div className="kpi-v">{vsEst.length}</div></div>
+        <div className="kpi acc"><div className="kpi-l">Viajes</div><div className="kpi-v">{countViajes(vsEst)}</div></div>
         <div className="kpi"><div className="kpi-l">M³ Total</div><div className="kpi-v" style={{ color: 'var(--info)' }}>{totalM3.toFixed(2)}</div></div>
         <div className="kpi grn"><div className="kpi-l">Cobro total</div><div className="kpi-v">{fmt(totalCob)}</div></div>
         <div className="kpi pur"><div className="kpi-l">Utilidad</div><div className="kpi-v">{fmt(totalUtil)}</div></div>
@@ -539,7 +541,7 @@ function PantallaDetalle({ est, onBack }) {
       {/* Tabla viajes */}
       <div className="tc">
         <div className="tc-h">
-          <span className="tc-t">Viajes en esta estimación ({vsEst.length})</span>
+          <span className="tc-t">Viajes en esta estimación ({countViajes(vsEst)})</span>
           <div style={{ display:'flex', gap:6 }}>
             <button className="btn btn-out btn-sm" onClick={imprimirCaratula}><i className="ti ti-printer" />Imprimir</button>
             <button className="btn btn-out btn-sm" onClick={exportarExcel}><i className="ti ti-table-export" />Excel</button>

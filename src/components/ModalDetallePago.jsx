@@ -43,7 +43,6 @@ export default function ModalDetallePago({ pago, onClose }) {
         <td>${agNombre(v.agremiado_id)}</td>
         <td>${v.operador||'—'}</td>
         <td style="text-align:right;font-family:monospace">${vM3(v)}</td>
-        <td style="text-align:right;font-family:monospace;color:#166534">${fmt(vCobro(v))}</td>
         <td style="text-align:right;font-family:monospace;color:#166534;font-weight:700">${fmt(monto)}</td>
       </tr>`).join('')
 
@@ -109,15 +108,14 @@ export default function ModalDetallePago({ pago, onClose }) {
       </div>
     </div>
 
-    <div class="kpis">
+    <div class="kpis" style="grid-template-columns:repeat(3,1fr)">
       <div class="kpi"><div class="kpi-l">Viajes</div><div class="kpi-v" style="color:#b45309">${viajesList.length}</div></div>
       <div class="kpi"><div class="kpi-l">M³ Total</div><div class="kpi-v" style="color:#1d4ed8">${totalM3.toFixed(2)}</div></div>
-      <div class="kpi"><div class="kpi-l">Cobro Total</div><div class="kpi-v" style="color:#166534">${fmt(totalCob)}</div></div>
       <div class="kpi"><div class="kpi-l">Monto Pagado</div><div class="kpi-v" style="color:#166534">${fmt(totalMonto)}</div></div>
     </div>
 
     <h2>Viajes incluidos en este pago</h2>
-    <table><thead><tr><th>Ticket</th><th>Tracto</th><th>Tipo</th><th>Agremiado</th><th>Operador</th><th>M³</th><th>Cobro</th><th>Pagado</th></tr></thead>
+    <table><thead><tr><th>Ticket</th><th>Tracto</th><th>Tipo</th><th>Agremiado</th><th>Operador</th><th>M³</th><th>Pagado</th></tr></thead>
     <tbody>${rows}</tbody></table>
 
     ${comprobanteHtml}

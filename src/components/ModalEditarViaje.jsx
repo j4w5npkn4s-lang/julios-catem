@@ -40,19 +40,24 @@ export default function ModalEditarViaje({ viaje: v, onClose, onSaved }) {
   const [fotoTracto, setFotoTracto] = useState(null)
   const [fotoLleg, setFotoLleg]   = useState(null)
   const [fotoLleg2, setFotoLleg2] = useState(null)
+  // Marcar fotos existentes para eliminar
+  const [quitarTSal, setQuitarTSal]     = useState(false)
+  const [quitarTracto, setQuitarTracto] = useState(false)
+  const [quitarLleg, setQuitarLleg]     = useState(false)
+  const [quitarLleg2, setQuitarLleg2]   = useState(false)
 
   async function handleSave() {
     if (!tracto.trim()) return toast('Placa tracto requerida', 'err')
     setSaving(true)
     try {
-      let urlTSal   = v.foto_ticket_salida_url
-      let urlTracto = v.foto_tracto_url
-      let urlLleg   = v.foto_ticket_llegada_url
+      let urlTSal   = quitarTSal   ? null : v.foto_ticket_salida_url
+      let urlTracto = quitarTracto ? null : v.foto_tracto_url
+      let urlLleg   = quitarLleg   ? null : v.foto_ticket_llegada_url
 
       if (fotoTSal)   urlTSal   = await uploadFoto(fotoTSal,   `tickets/${bid}`)
       if (fotoTracto) urlTracto = await uploadFoto(fotoTracto, `tickets/${bid}`)
       if (fotoLleg)   urlLleg   = await uploadFoto(fotoLleg,   `tickets/${bid}`)
-      let urlLleg2 = v.foto_ticket2_url
+      let urlLleg2 = quitarLleg2 ? null : v.foto_ticket2_url
       if (fotoLleg2)  urlLleg2  = await uploadFoto(fotoLleg2,  `tickets/${bid}-llegada2`)
 
       // Si cambió el folio (ID primario), insertar nuevo y borrar el viejo
@@ -77,6 +82,7 @@ export default function ModalEditarViaje({ viaje: v, onClose, onSaved }) {
           notas,
           foto_ticket_salida: !!urlTSal, foto_tracto: !!urlTracto, foto_ticket_llegada: !!urlLleg,
           foto_ticket_salida_url: urlTSal, foto_tracto_url: urlTracto, foto_ticket_llegada_url: urlLleg,
+          foto_ticket2_url: urlLleg2,
           registrado_por: v.registrado_por,
         }])
         if (insErr) throw new Error('Error al guardar nuevo folio: ' + insErr.message)
@@ -112,6 +118,7 @@ export default function ModalEditarViaje({ viaje: v, onClose, onSaved }) {
         foto_ticket_salida_url: urlTSal,
         foto_tracto_url: urlTracto,
         foto_ticket_llegada_url: urlLleg,
+        foto_ticket2_url: urlLleg2,
       })
       await loadAll()
       toast(`Ticket ${v.id} actualizado ✓`, 'ok')
@@ -246,24 +253,48 @@ export default function ModalEditarViaje({ viaje: v, onClose, onSaved }) {
       </div>
 
       {/* FOTOS */}
-      <div className="sdv">Fotos <span style={{ fontWeight:400, fontSize:9, textTransform:'none', letterSpacing:0, color:'var(--muted)' }}>(solo si quieres reemplazar la foto existente)</span></div>
+      <div className="sdv">Fotos <span style={{ fontWeight:400, fontSize:9, textTransform:'none', letterSpacing:0, color:'var(--muted)' }}>(reemplaza o quita la foto existente si está mal)</span></div>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
         <div>
-          {v.foto_ticket_salida_url && <a href={v.foto_ticket_salida_url} target="_blank" style={{ fontSize:10, color:'var(--info)', display:'block', marginBottom:5 }}>Ver ticket salida actual →</a>}
-          <FotoSlot label="Reemplazar ticket salida" onCapture={setFotoTSal} done={!!fotoTSal} />
+          {v.foto_ticket_salida_url && !quitarTSal && (
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:5 }}>
+              <a href={v.foto_ticket_salida_url} target="_blank" style={{ fontSize:10, color:'var(--info)' }}>Ver ticket salida actual →</a>
+              <button type="button" className="btn btn-danger btn-xs" onClick={() => setQuitarTSal(true)}><i className="ti ti-trash" />Quitar</button>
+            </div>
+          )}
+          {quitarTSal && <div style={{ fontSize:10, color:'var(--err)', marginBottom:5 }}>⚠ Foto marcada para eliminar — <button type="button" onClick={() => setQuitarTSal(false)} style={{ background:'none', border:'none', color:'var(--info)', cursor:'pointer', textDecoration:'underline', fontSize:10, padding:0 }}>deshacer</button></div>}
+          <FotoSlot label="Reemplazar ticket salida" onCapture={f => { setFotoTSal(f); setQuitarTSal(false) }} done={!!fotoTSal} />
         </div>
         <div>
-          {v.foto_tracto_url && <a href={v.foto_tracto_url} target="_blank" style={{ fontSize:10, color:'var(--info)', display:'block', marginBottom:5 }}>Ver foto tracto actual →</a>}
-          <FotoSlot label="Reemplazar foto tracto" icon="truck" onCapture={setFotoTracto} done={!!fotoTracto} />
+          {v.foto_tracto_url && !quitarTracto && (
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:5 }}>
+              <a href={v.foto_tracto_url} target="_blank" style={{ fontSize:10, color:'var(--info)' }}>Ver foto tracto actual →</a>
+              <button type="button" className="btn btn-danger btn-xs" onClick={() => setQuitarTracto(true)}><i className="ti ti-trash" />Quitar</button>
+            </div>
+          )}
+          {quitarTracto && <div style={{ fontSize:10, color:'var(--err)', marginBottom:5 }}>⚠ Foto marcada para eliminar — <button type="button" onClick={() => setQuitarTracto(false)} style={{ background:'none', border:'none', color:'var(--info)', cursor:'pointer', textDecoration:'underline', fontSize:10, padding:0 }}>deshacer</button></div>}
+          <FotoSlot label="Reemplazar foto tracto" icon="truck" onCapture={f => { setFotoTracto(f); setQuitarTracto(false) }} done={!!fotoTracto} />
         </div>
         <div>
-          {v.foto_ticket_llegada_url && <a href={v.foto_ticket_llegada_url} target="_blank" style={{ fontSize:10, color:'var(--info)', display:'block', marginBottom:5 }}>Ver ticket llegada 1 →</a>}
-          <FotoSlot label={tipo==='full'?'Ticket llegada 1':'Reemplazar ticket llegada'} onCapture={setFotoLleg} done={!!fotoLleg} />
+          {v.foto_ticket_llegada_url && !quitarLleg && (
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:5 }}>
+              <a href={v.foto_ticket_llegada_url} target="_blank" style={{ fontSize:10, color:'var(--info)' }}>Ver ticket llegada 1 →</a>
+              <button type="button" className="btn btn-danger btn-xs" onClick={() => setQuitarLleg(true)}><i className="ti ti-trash" />Quitar</button>
+            </div>
+          )}
+          {quitarLleg && <div style={{ fontSize:10, color:'var(--err)', marginBottom:5 }}>⚠ Foto marcada para eliminar — <button type="button" onClick={() => setQuitarLleg(false)} style={{ background:'none', border:'none', color:'var(--info)', cursor:'pointer', textDecoration:'underline', fontSize:10, padding:0 }}>deshacer</button></div>}
+          <FotoSlot label={tipo==='full'?'Ticket llegada 1':'Reemplazar ticket llegada'} onCapture={f => { setFotoLleg(f); setQuitarLleg(false) }} done={!!fotoLleg} />
         </div>
         {tipo === 'full' && (
           <div>
-            {v.foto_ticket2_url && <a href={v.foto_ticket2_url} target="_blank" style={{ fontSize:10, color:'var(--info)', display:'block', marginBottom:5 }}>Ver ticket llegada 2 →</a>}
-            <FotoSlot label="Ticket llegada 2" onCapture={setFotoLleg2} done={!!fotoLleg2} />
+            {v.foto_ticket2_url && !quitarLleg2 && (
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:5 }}>
+                <a href={v.foto_ticket2_url} target="_blank" style={{ fontSize:10, color:'var(--info)' }}>Ver ticket llegada 2 →</a>
+                <button type="button" className="btn btn-danger btn-xs" onClick={() => setQuitarLleg2(true)}><i className="ti ti-trash" />Quitar</button>
+              </div>
+            )}
+            {quitarLleg2 && <div style={{ fontSize:10, color:'var(--err)', marginBottom:5 }}>⚠ Foto marcada para eliminar — <button type="button" onClick={() => setQuitarLleg2(false)} style={{ background:'none', border:'none', color:'var(--info)', cursor:'pointer', textDecoration:'underline', fontSize:10, padding:0 }}>deshacer</button></div>}
+            <FotoSlot label="Ticket llegada 2" onCapture={f => { setFotoLleg2(f); setQuitarLleg2(false) }} done={!!fotoLleg2} />
           </div>
         )}
       </div>

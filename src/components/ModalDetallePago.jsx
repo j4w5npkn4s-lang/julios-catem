@@ -47,6 +47,41 @@ export default function ModalDetallePago({ pago, onClose }) {
         <td style="text-align:right;font-family:monospace;color:#166534;font-weight:700">${fmt(monto)}</td>
       </tr>`).join('')
 
+    // Tarjetas con fotos de tickets por cada viaje incluido
+    const fotosViajes = viajesList.map(({ viaje: v }) => {
+      const fotos = [
+        { label: 'Ticket salida', url: v.foto_ticket_salida_url },
+        ...(v.tipo === 'full' ? [{ label: 'Ticket salida 2', url: v.foto_ticket2_url }] : []),
+        { label: 'Foto tracto', url: v.foto_tracto_url },
+        { label: 'Ticket llegada', url: v.foto_ticket_llegada_url },
+        ...(v.tipo === 'full' ? [{ label: 'Ticket llegada 2', url: v.foto_ticket_llegada2_url }] : []),
+      ]
+      const imgs = fotos.map(f => `
+        <div style="flex:1;min-width:140px">
+          <div style="font-size:9px;color:#6b7280;text-transform:uppercase;font-weight:700;margin-bottom:4px">${f.label}</div>
+          ${f.url
+            ? `<img src="${f.url}" style="width:100%;height:140px;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb" />`
+            : `<div style="width:100%;height:140px;background:#fef2f2;color:#991b1b;display:flex;align-items:center;justify-content:center;border-radius:6px;font-size:11px;text-align:center">Sin foto</div>`
+          }
+        </div>`).join('')
+      return `
+        <div style="break-inside:avoid;margin-bottom:18px;border:1px solid #e5e7eb;border-radius:8px;padding:12px">
+          <div style="font-size:12px;font-weight:700;margin-bottom:8px;color:#111">
+            <span style="color:#b45309;font-family:monospace">${v.id}${v.folio2?' / '+v.folio2:''}</span>
+            &nbsp;·&nbsp;${v.tracto}&nbsp;·&nbsp;${agNombre(v.agremiado_id)}
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">${imgs}</div>
+        </div>`
+    }).join('')
+
+    const comprobanteHtml = pago.comprobante_url ? `
+      <h2>Comprobante de pago</h2>
+      <div style="text-align:center;margin-bottom:16px">
+        <img src="${pago.comprobante_url}" style="max-width:100%;max-height:500px;border:1px solid #e5e7eb;border-radius:8px" />
+      </div>` : `
+      <h2>Comprobante de pago</h2>
+      <div style="padding:20px;text-align:center;color:#991b1b;background:#fef2f2;border-radius:8px;margin-bottom:16px">Sin comprobante adjunto</div>`
+
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
     <title>Comprobante de pago${pago.folio?' - '+pago.folio:''}</title>
     <style>
@@ -61,7 +96,7 @@ export default function ModalDetallePago({ pago, onClose }) {
       td{padding:5px 8px;border-bottom:1px solid #f3f4f6}
       tr:nth-child(even){background:#fafafa}
       .footer{margin-top:24px;font-size:10px;color:#9ca3af;text-align:center;border-top:1px solid #e5e7eb;padding-top:8px}
-      @media print{body{margin:12px}}
+      @media print{body{margin:12px} .kpi,div[style*="break-inside"]{break-inside:avoid}}
     </style></head><body>
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
       <div>
@@ -84,6 +119,11 @@ export default function ModalDetallePago({ pago, onClose }) {
     <h2>Viajes incluidos en este pago</h2>
     <table><thead><tr><th>Ticket</th><th>Tracto</th><th>Tipo</th><th>Agremiado</th><th>Operador</th><th>M³</th><th>Cobro</th><th>Pagado</th></tr></thead>
     <tbody>${rows}</tbody></table>
+
+    ${comprobanteHtml}
+
+    <h2>Fotos de tickets por viaje</h2>
+    ${fotosViajes}
 
     <div class="footer">JSV Tracking · Generado: ${new Date().toLocaleString('es-MX')}</div>
     <script>window.onload=()=>window.print()</script>

@@ -241,6 +241,19 @@ function PantallaDetalle({ est, onBack }) {
     } catch (err) { toast(err.message, 'err') }
   }
 
+  async function handleQuitarTodos() {
+    const vsEst = viajes.filter(v => v.estimacion_id === est.id)
+    if (!vsEst.length) return
+    if (!confirm(`¿Quitar los ${vsEst.length} viajes de esta estimación? Volverán a pendiente de conciliar.`)) return
+    try {
+      for (const v of vsEst) {
+        await updateViaje(v.id, { estimacion_id: null, estado: 'pendiente_conciliar' })
+      }
+      await loadAll()
+      toast(`${vsEst.length} viajes removidos de la estimación`, 'ok')
+    } catch (err) { toast(err.message, 'err') }
+  }
+
   function imprimirCaratula() {
     const vsEst = viajes.filter(v => v.estimacion_id === est.id)
     const totalM3   = vsEst.reduce((a,v)=>a+vM3(v),0)
@@ -524,6 +537,9 @@ function PantallaDetalle({ est, onBack }) {
             <button className="btn btn-out btn-sm" onClick={imprimirCaratula}><i className="ti ti-printer" />Imprimir</button>
             <button className="btn btn-out btn-sm" onClick={exportarExcel}><i className="ti ti-table-export" />Excel</button>
             <button className="btn btn-out btn-sm" onClick={exportarFotosPDF}><i className="ti ti-file-download" />Evidencia</button>
+            {est.estado==='abierta' && p.canConciliar && vsEst.length > 0 && (
+              <button className="btn btn-danger btn-sm" onClick={handleQuitarTodos}><i className="ti ti-trash" />Quitar todos</button>
+            )}
           </div>
         </div>
         <div className="tw">

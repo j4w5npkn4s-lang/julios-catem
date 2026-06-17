@@ -8,7 +8,7 @@ import ModalLlegada from '../components/ModalLlegada'
 import ModalPago from '../components/ModalPago'
 
 export default function ViewViajes({ onNewTicket, searchQ = '' }) {
-  const { viajes, estimaciones, agremiados, vCobro, vPago, vUtil, vM3, fmt, reabrirViaje, deleteViaje, perm } = useApp()
+  const { viajes, estimaciones, agremiados, vCobro, vPago, vUtil, vM3, fmt, reabrirViaje, deleteViaje, perm, config } = useApp()
   const toast = useToast()
   const p = perm()
   const [fEst, setFEst]       = useState('')
@@ -36,12 +36,17 @@ export default function ViewViajes({ onNewTicket, searchQ = '' }) {
     const data = []
     rows.forEach(v => {
       const ag = agremiados?.find(a=>a.id===v.agremiado_id)?.nombre||''
-      const base = [v.tipo, v.tracto, v.km||0, v.origen||'', v.destino||'', v.operador||'', ag, v.fecha_salida||'', v.hora_salida||'', v.fecha_llegada||'', v.estado, v.estimacion_id||'', vCobro(v), vPago(v)]
-      // Fila gondola 1
-      data.push([v.id, v.gondola1||'', v.m3_1||0, ...base])
-      // Fila gondola 2 (solo Full)
+      const base = [v.tipo, v.tracto, v.km||0, v.origen||'', v.destino||'', v.operador||'', ag, v.fecha_salida||'', v.hora_salida||'', v.fecha_llegada||'', v.estado, v.estimacion_id||'']
       if (v.tipo === 'full') {
-        data.push([v.folio2||'', v.gondola2||'', v.m3_2||0, ...base])
+        // Calcular cobro/pago real de cada gondola: tarifa x m3 propio x km (no es un reparto proporcional)
+        const cobroG1 = +(config.tarifa_cobro * (v.m3_1||0) * (v.km||0)).toFixed(2)
+        const pagoG1  = +(config.tarifa_pago  * (v.m3_1||0) * (v.km||0)).toFixed(2)
+        const cobroG2 = +(config.tarifa_cobro * (v.m3_2||0) * (v.km||0)).toFixed(2)
+        const pagoG2  = +(config.tarifa_pago  * (v.m3_2||0) * (v.km||0)).toFixed(2)
+        data.push([v.id, v.gondola1||'', v.m3_1||0, ...base, cobroG1, pagoG1])
+        data.push([v.folio2||'', v.gondola2||'', v.m3_2||0, ...base, cobroG2, pagoG2])
+      } else {
+        data.push([v.id, v.gondola1||'', v.m3_1||0, ...base, vCobro(v), vPago(v)])
       }
     })
     const csv = [headers, ...data].map(r => r.map(x => `"${String(x).replace(/"/g,'""')}"`).join(',')).join('\n')

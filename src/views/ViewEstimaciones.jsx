@@ -167,7 +167,7 @@ function PantallaEstimaciones({ anio, onBack, onSelectEst }) {
 // ── PANTALLA 3: DETALLE ESTIMACIÓN ───────────────────────────────
 function PantallaDetalle({ est, onBack, searchQ = '' }) {
   const { viajes, estimaciones, agremiados, vCobro, vPago, vM3, fmt, updateViaje, uploadFoto,
-          supabase: _s, perm, loadAll } = useApp()
+          supabase: _s, perm, loadAll, config } = useApp()
   const toast = useToast()
   const p = perm()
   const [showAgregar, setShowAgregar] = useState(false)
@@ -238,9 +238,18 @@ function PantallaDetalle({ est, onBack, searchQ = '' }) {
     const data = []
     vsEst.forEach(v => {
       const ag = agremiados?.find(a=>a.id===v.agremiado_id)?.nombre||''
-      const base = [v.tipo, v.tracto, v.km||0, v.origen||'', v.destino||'', v.operador||'', ag, v.fecha_salida||'', v.hora_salida||'', v.fecha_llegada||'', v.estado, vCobro(v), vPago(v)]
-      data.push([v.id, v.gondola1||'', v.m3_1||0, ...base])
-      if (v.tipo === 'full') data.push([v.folio2||'', v.gondola2||'', v.m3_2||0, ...base])
+      const base = [v.tipo, v.tracto, v.km||0, v.origen||'', v.destino||'', v.operador||'', ag, v.fecha_salida||'', v.hora_salida||'', v.fecha_llegada||'', v.estado]
+      if (v.tipo === 'full') {
+        // Calcular cobro/pago real de cada gondola: tarifa x m3 propio x km (no es un reparto proporcional)
+        const cobroG1 = +(config.tarifa_cobro * (v.m3_1||0) * (v.km||0)).toFixed(2)
+        const pagoG1  = +(config.tarifa_pago  * (v.m3_1||0) * (v.km||0)).toFixed(2)
+        const cobroG2 = +(config.tarifa_cobro * (v.m3_2||0) * (v.km||0)).toFixed(2)
+        const pagoG2  = +(config.tarifa_pago  * (v.m3_2||0) * (v.km||0)).toFixed(2)
+        data.push([v.id, v.gondola1||'', v.m3_1||0, ...base, cobroG1, pagoG1])
+        data.push([v.folio2||'', v.gondola2||'', v.m3_2||0, ...base, cobroG2, pagoG2])
+      } else {
+        data.push([v.id, v.gondola1||'', v.m3_1||0, ...base, vCobro(v), vPago(v)])
+      }
     })
     const csv = [headers, ...data].map(r => r.map(x => `"${String(x).replace(/"/g,'""')}"`).join(',')).join('\n')
     const blob = new Blob(['\ufeff'+csv], { type:'text/csv;charset=utf-8;' })

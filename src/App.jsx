@@ -152,7 +152,7 @@ function AppInner() {
       case 'flotilla':   return <ViewFlotilla />
       case 'agremiados': return <ViewAgremiados />
       case 'est':        return <ViewEstimaciones searchQ={searchQ} />
-      case 'pagos':      return <ViewPagos />
+      case 'pagos':      return <ViewPagos searchQ={searchQ} />
       case 'reportes':   return <ViewReportes />
       case 'config':     return <ViewConfig />
       case 'usuarios':   return <ViewUsuarios />

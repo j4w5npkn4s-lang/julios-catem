@@ -8,7 +8,7 @@ import { useToast } from '../components/Toast'
 import Modal from '../components/Modal'
 
 // ══ PAGOS ══
-export function ViewPagos() {
+export function ViewPagos({ searchQ = '' }) {
   const { viajes, agremiados, pagos, vPago, vM3, fmt, perm } = useApp()
   const toast = useToast()
   const [fAgremiado, setFAgremiado] = useState('')
@@ -38,6 +38,12 @@ export function ViewPagos() {
       if (v.estado !== fEstado) return false
     }
     if (fAgremiado && v.agremiado_id !== fAgremiado) return false
+    if (searchQ) {
+      const q = searchQ.toLowerCase()
+      const ag = agremiados?.find(a=>a.id===v.agremiado_id)?.nombre || ''
+      const haystack = `${v.id} ${v.folio2||''} ${v.tracto} ${v.operador||''} ${ag}`.toLowerCase()
+      if (!haystack.includes(q)) return false
+    }
     return true
   })
 
@@ -200,7 +206,7 @@ export function ViewPagos() {
       {pagoVs && <ModalPago viajes={pagoVs} onClose={() => { setPagoVs(null); setSelec(new Set()) }} onSaved={() => { setPagoVs(null); setSelec(new Set()) }} />}
       </>}
 
-      {tab === 'historial' && <HistorialPagos onDetalle={setDetallePago} />}
+      {tab === 'historial' && <HistorialPagos onDetalle={setDetallePago} searchQ={searchQ} />}
 
       {detallePago && <ModalDetallePago pago={detallePago} onClose={() => setDetallePago(null)} />}
       {detalleViaje && <ModalDetalleViaje viaje={detalleViaje} onClose={() => setDetalleViaje(null)} />}
@@ -208,7 +214,7 @@ export function ViewPagos() {
   )
 }
 
-function HistorialPagos({ onDetalle }) {
+function HistorialPagos({ onDetalle, searchQ = '' }) {
   const { pagos, viajes, agremiados, fmt } = useApp()
   const [fAgr, setFAgr] = useState('')
 
@@ -223,16 +229,25 @@ function HistorialPagos({ onDetalle }) {
         const total = grupo.reduce((a,x) => a+x.monto,0)
         const viajesGrupo = grupo.map(x => viajes.find(v=>v.id===x.viaje_id)).filter(Boolean)
         const agId = viajesGrupo[0]?.agremiado_id
-        groups.push({ ...p, _total: total, _count: grupo.length, _agId: agId })
+        groups.push({ ...p, _total: total, _count: grupo.length, _agId: agId, _folios: viajesGrupo.map(v=>v.id) })
       }
     } else {
       const v = viajes.find(x=>x.id===p.viaje_id)
-      groups.push({ ...p, _total: p.monto, _count: 1, _agId: v?.agremiado_id })
+      groups.push({ ...p, _total: p.monto, _count: 1, _agId: v?.agremiado_id, _folios: v ? [v.id] : [] })
     }
   })
 
-  const filtered = fAgr ? groups.filter(g => g._agId === fAgr) : groups
   const getNombre = id => agremiados.find(a=>a.id===id)?.nombre||'—'
+
+  const filtered = groups.filter(g => {
+    if (fAgr && g._agId !== fAgr) return false
+    if (searchQ) {
+      const q = searchQ.toLowerCase()
+      const haystack = `${g.folio||''} ${getNombre(g._agId)} ${(g._folios||[]).join(' ')}`.toLowerCase()
+      if (!haystack.includes(q)) return false
+    }
+    return true
+  })
 
   return (
     <div>

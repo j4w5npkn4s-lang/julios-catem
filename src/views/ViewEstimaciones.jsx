@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { jsPDF } from 'jspdf'
 import ModalDetalleViaje from '../components/ModalDetalleViaje'
 import { supabase } from '../lib/supabase'
 import { useApp } from '../lib/AppContext'
@@ -340,9 +341,8 @@ function PantallaDetalle({ est, onBack }) {
 
   async function exportarFotosPDF() {
     const vsEst = viajes.filter(v => v.estimacion_id === est.id)
-    if (!vsEst.length) return
-
-    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+    if (!vsEst.length) { toast('Sin viajes en esta estimación', 'warn'); return }
+    try {
     const W = 210, margin = 10, colW = (W - margin*2 - 5) / 2
 
     const loadImg = url => new Promise(res => {
@@ -430,6 +430,10 @@ function PantallaDetalle({ est, onBack }) {
     }
 
     pdf.save(`${est.id}-fotos.pdf`)
+    } catch (err) {
+      console.error('Error generando PDF:', err)
+      toast('Error al generar el PDF: ' + err.message, 'err')
+    }
   }
 
   async function handleCerrar() {

@@ -175,6 +175,7 @@ function PantallaDetalle({ est, onBack }) {
   const [fDesde, setFDesde]           = useState('')
   const [fHasta, setFHasta]           = useState('')
   const [fAgr, setFAgr]               = useState('')
+  const [fBusq, setFBusq]             = useState('')
   const [podFile, setPodFile]         = useState(null)
   const [closing, setClosing]         = useState(false)
   const [detalleV, setDetalleV]       = useState(null)
@@ -188,6 +189,12 @@ function PantallaDetalle({ est, onBack }) {
     if (fDesde && v.fecha_salida < fDesde) return false
     if (fHasta && v.fecha_salida > fHasta) return false
     if (fAgr   && v.agremiado_id !== fAgr) return false
+    if (fBusq) {
+      const q = fBusq.toLowerCase()
+      const ag = agremiados?.find(a=>a.id===v.agremiado_id)?.nombre || ''
+      const haystack = `${v.id} ${v.folio2||''} ${v.tracto} ${v.operador||''} ${ag}`.toLowerCase()
+      if (!haystack.includes(q)) return false
+    }
     return true
   })
 
@@ -591,21 +598,27 @@ function PantallaDetalle({ est, onBack }) {
                 <div><span style={{ color: 'var(--muted)' }}>M³: </span><b>{selM3.toFixed(2)}</b></div>
                 <div><span style={{ color: 'var(--muted)' }}>Cobro: </span><b style={{ color: 'var(--cobro)', fontFamily: "'Space Mono',monospace" }}>{fmt(selCob)}</b></div>
               </div>
+              {/* Buscar */}
+              <div style={{ position:'relative', marginBottom:8 }}>
+                <i className="ti ti-search" style={{ position:'absolute', left:9, top:'50%', transform:'translateY(-50%)', fontSize:13, color:'var(--muted)' }} />
+                <input type="text" value={fBusq} onChange={e=>setFBusq(e.target.value)} placeholder="Buscar por folio, tracto, operador..."
+                  style={{ width:'100%', height:30, fontSize:11, padding:'0 9px 0 28px', background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:6, color:'var(--text)' }} />
+              </div>
               {/* Filtros */}
-              <div style={{ display:'flex', gap:6, marginBottom:10, flexWrap:'wrap', alignItems:'center' }}>
+              <div style={{ display:'flex', gap:5, marginBottom:10, flexWrap:'nowrap', alignItems:'center' }}>
                 <input type="date" value={fDesde} onChange={e=>setFDesde(e.target.value)}
-                  style={{ height:28, fontSize:11, padding:'0 7px', background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:6, color:'var(--text)' }} title="Desde" />
-                <span style={{ fontSize:11, color:'var(--muted)' }}>→</span>
+                  style={{ flex:1, minWidth:0, height:28, fontSize:10, padding:'0 5px', background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:6, color:'var(--text)' }} title="Desde" />
+                <span style={{ fontSize:11, color:'var(--muted)', flexShrink:0 }}>→</span>
                 <input type="date" value={fHasta} onChange={e=>setFHasta(e.target.value)}
-                  style={{ height:28, fontSize:11, padding:'0 7px', background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:6, color:'var(--text)' }} title="Hasta" />
+                  style={{ flex:1, minWidth:0, height:28, fontSize:10, padding:'0 5px', background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:6, color:'var(--text)' }} title="Hasta" />
                 <select value={fAgr} onChange={e=>setFAgr(e.target.value)}
-                  style={{ height:28, fontSize:11, padding:'0 7px', background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:6, color:'var(--text)', minWidth:130 }}>
-                  <option value="">Todos los agremiados</option>
+                  style={{ flex:1, minWidth:0, height:28, fontSize:10, padding:'0 5px', background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:6, color:'var(--text)' }}>
+                  <option value="">Agremiado</option>
                   {agremiados?.filter(a=>a.activo!==false).map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}
                 </select>
-                {(fDesde||fHasta||fAgr) && (
-                  <button className="btn btn-out btn-xs" onClick={()=>{setFDesde('');setFHasta('');setFAgr('')}}>
-                    <i className="ti ti-x"/>Limpiar
+                {(fDesde||fHasta||fAgr||fBusq) && (
+                  <button className="btn btn-out btn-xs" style={{ flexShrink:0 }} onClick={()=>{setFDesde('');setFHasta('');setFAgr('');setFBusq('')}}>
+                    <i className="ti ti-x"/>
                   </button>
                 )}
               </div>

@@ -53,10 +53,11 @@ export function ViewPagos({ searchQ = '' }) {
     setSelec(s)
   }
   function toggleAll() {
-    setSelec(selec.size === vsFiltrados.length ? new Set() : new Set(vsFiltrados.map(v=>v.id)))
+    setSelec(selecAllSelected ? new Set() : new Set(vsFiltrados.map(v=>v.id)))
   }
 
   const selecViajes = vsFiltrados.filter(v => selec.has(v.id))
+  const selecAllSelected = vsFiltrados.length > 0 && selecViajes.length === vsFiltrados.length
   const totalPago   = selecViajes.reduce((a,v) => a + vPago(v), 0)
 
   // Fotos status
@@ -101,14 +102,14 @@ export function ViewPagos({ searchQ = '' }) {
       {/* Botón seleccionar todos */}
       <div style={{ display:'flex', gap:8, marginBottom:8, alignItems:'center' }}>
         <button className="btn btn-out btn-sm" onClick={toggleAll}>
-          {selec.size === vsFiltrados.length && vsFiltrados.length > 0
+          {selecAllSelected
             ? <><i className="ti ti-square-minus" />Deseleccionar todos</>
             : <><i className="ti ti-checkbox" />Seleccionar todos ({vsFiltrados.length})</>
           }
         </button>
-        {selec.size > 0 && (
+        {selecViajes.length > 0 && (
           <span style={{ fontSize:11, color:'var(--muted)' }}>
-            {selec.size} de {vsFiltrados.length} seleccionados
+            {selecViajes.length} de {vsFiltrados.length} seleccionados
           </span>
         )}
       </div>
@@ -120,9 +121,9 @@ export function ViewPagos({ searchQ = '' }) {
             <thead>
               <tr>
                 <th style={{width:48, textAlign:'center'}}>
-                  <div onClick={toggleAll} style={{width:22,height:22,borderRadius:5,border:`2px solid ${selec.size===vsFiltrados.length&&vsFiltrados.length>0?'var(--acc)':'var(--border2)'}`,background:selec.size===vsFiltrados.length&&vsFiltrados.length>0?'var(--acc)':'transparent',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto'}}>
-                    {selec.size===vsFiltrados.length&&vsFiltrados.length>0&&<i className="ti ti-check" style={{fontSize:13,color:'#000'}}/>}
-                    {selec.size>0&&selec.size<vsFiltrados.length&&<i className="ti ti-minus" style={{fontSize:13,color:'var(--acc)'}}/>}
+                  <div onClick={toggleAll} style={{width:22,height:22,borderRadius:5,border:`2px solid ${selecAllSelected?'var(--acc)':'var(--border2)'}`,background:selecAllSelected?'var(--acc)':'transparent',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto'}}>
+                    {selecAllSelected&&<i className="ti ti-check" style={{fontSize:13,color:'#000'}}/>}
+                    {selecViajes.length>0&&!selecAllSelected&&<i className="ti ti-minus" style={{fontSize:13,color:'var(--acc)'}}/>}
                   </div>
                 </th>
                 <th>TICKET</th><th>AGREMIADO</th><th>TRACTO</th><th>TIPO</th>
@@ -179,10 +180,10 @@ export function ViewPagos({ searchQ = '' }) {
           </table>
         </div>
         {/* BARRA TOTAL SELECCIONADOS */}
-        {selec.size > 0 && (
+        {selecViajes.length > 0 && (
           <div style={{ padding:'14px 16px', borderTop:'2px solid var(--border)', background:'var(--bg3)', display:'flex', alignItems:'center', gap:16, flexWrap:'wrap' }}>
             <div style={{ fontSize:12, color:'var(--muted)' }}>
-              <b style={{ color:'var(--text)', fontSize:14 }}>{selec.size}</b> ticket{selec.size!==1?'s':''} seleccionado{selec.size!==1?'s':''}
+              <b style={{ color:'var(--text)', fontSize:14 }}>{selecViajes.length}</b> ticket{selecViajes.length!==1?'s':''} seleccionado{selecViajes.length!==1?'s':''}
             </div>
             <div style={{ fontSize:12 }}>
               M³: <b style={{ fontFamily:"'Space Mono',monospace" }}>{selecViajes.reduce((a,v)=>a+vM3(v),0).toFixed(2)}</b>
@@ -196,7 +197,7 @@ export function ViewPagos({ searchQ = '' }) {
             </button>
             {p.canPagar && (
               <button className="btn btn-ok" style={{ padding:'10px 20px', fontSize:13 }} onClick={() => setPagoVs(selecViajes)}>
-                <i className="ti ti-cash" style={{ fontSize:16 }} />Pagar {selec.size} ticket{selec.size!==1?'s':''}
+                <i className="ti ti-cash" style={{ fontSize:16 }} />Pagar {selecViajes.length} ticket{selecViajes.length!==1?'s':''}
               </button>
             )}
           </div>

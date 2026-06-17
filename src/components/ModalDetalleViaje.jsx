@@ -200,9 +200,9 @@ _Generado por JSV Tracking_`
 
   if (!v) return null
 
-  const pagosList = pagos.filter(pg => pg.viaje_id === v.id)
+  const pagosList = (pagos || []).filter(pg => pg.viaje_id === v.id)
   const totalPagado = pagosList.reduce((a, pg) => a + (pg.monto || 0), 0)
-  const agNombre = agremiados.find(a => a.id === v.agremiado_id)?.nombre || '—'
+  const agNombre = (agremiados || []).find(a => a.id === v.agremiado_id)?.nombre || '—'
 
   const InfoRow = ({ label, value, color }) => (
     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid var(--border)', fontSize: 11 }}>

@@ -277,7 +277,7 @@ _Generado por JSV Tracking_`
               ...(v.tipo==='full' ? [{ label: 'Ticket salida 2', ok: !!v.foto_ticket2_url, url: v.foto_ticket2_url }] : []),
               { label: 'Foto tracto',   ok: v.foto_tracto,        url: v.foto_tracto_url },
               { label: v.tipo==='full'?'Ticket llegada 1':'Ticket llegada', ok: v.foto_ticket_llegada, url: v.foto_ticket_llegada_url },
-              ...(v.tipo==='full' ? [{ label: 'Ticket llegada 2', ok: !!v.foto_ticket2_url, url: v.foto_ticket2_url }] : []),
+              ...(v.tipo==='full' ? [{ label: 'Ticket llegada 2', ok: !!v.foto_ticket_llegada2_url, url: v.foto_ticket_llegada2_url }] : []),
             ].map(f => (
               <div key={f.label} style={{ flex: 1, minWidth: 120, background: 'var(--bg3)', borderRadius: 8, padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 7, border: `1px solid ${f.ok ? 'rgba(34,197,94,.3)' : 'rgba(239,68,68,.2)'}` }}>
                 <i className={`ti ti-${f.ok ? 'circle-check' : 'circle-x'}`} style={{ color: f.ok ? 'var(--ok)' : 'var(--err)', fontSize: 16, flexShrink: 0 }} />

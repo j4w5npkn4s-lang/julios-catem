@@ -37,11 +37,13 @@ export default function ModalEditarViaje({ viaje: v, onClose, onSaved }) {
 
   // Fotos nuevas (si se suben reemplazan las existentes)
   const [fotoTSal, setFotoTSal]   = useState(null)
+  const [fotoTSal2, setFotoTSal2] = useState(null)
   const [fotoTracto, setFotoTracto] = useState(null)
   const [fotoLleg, setFotoLleg]   = useState(null)
   const [fotoLleg2, setFotoLleg2] = useState(null)
   // Marcar fotos existentes para eliminar
   const [quitarTSal, setQuitarTSal]     = useState(false)
+  const [quitarTSal2, setQuitarTSal2]   = useState(false)
   const [quitarTracto, setQuitarTracto] = useState(false)
   const [quitarLleg, setQuitarLleg]     = useState(false)
   const [quitarLleg2, setQuitarLleg2]   = useState(false)
@@ -53,11 +55,13 @@ export default function ModalEditarViaje({ viaje: v, onClose, onSaved }) {
       let urlTSal   = quitarTSal   ? null : v.foto_ticket_salida_url
       let urlTracto = quitarTracto ? null : v.foto_tracto_url
       let urlLleg   = quitarLleg   ? null : v.foto_ticket_llegada_url
+      let urlTSal2  = quitarTSal2  ? null : v.foto_ticket2_url
 
       if (fotoTSal)   urlTSal   = await uploadFoto(fotoTSal,   `tickets/${bid}`)
+      if (fotoTSal2)  urlTSal2  = await uploadFoto(fotoTSal2,  `tickets/${bid2||bid}`)
       if (fotoTracto) urlTracto = await uploadFoto(fotoTracto, `tickets/${bid}`)
       if (fotoLleg)   urlLleg   = await uploadFoto(fotoLleg,   `tickets/${bid}`)
-      let urlLleg2 = quitarLleg2 ? null : v.foto_ticket2_url
+      let urlLleg2 = quitarLleg2 ? null : v.foto_ticket_llegada2_url
       if (fotoLleg2)  urlLleg2  = await uploadFoto(fotoLleg2,  `tickets/${bid}-llegada2`)
 
       // Si cambió el folio (ID primario), insertar nuevo y borrar el viejo
@@ -82,7 +86,8 @@ export default function ModalEditarViaje({ viaje: v, onClose, onSaved }) {
           notas,
           foto_ticket_salida: !!urlTSal, foto_tracto: !!urlTracto, foto_ticket_llegada: !!urlLleg,
           foto_ticket_salida_url: urlTSal, foto_tracto_url: urlTracto, foto_ticket_llegada_url: urlLleg,
-          foto_ticket2_url: urlLleg2,
+          foto_ticket2_url: urlTSal2,
+          foto_ticket_llegada2_url: urlLleg2,
           registrado_por: v.registrado_por,
         }])
         if (insErr) throw new Error('Error al guardar nuevo folio: ' + insErr.message)
@@ -116,9 +121,10 @@ export default function ModalEditarViaje({ viaje: v, onClose, onSaved }) {
         foto_tracto: !!urlTracto,
         foto_ticket_llegada: !!urlLleg,
         foto_ticket_salida_url: urlTSal,
+        foto_ticket2_url: urlTSal2,
         foto_tracto_url: urlTracto,
         foto_ticket_llegada_url: urlLleg,
-        foto_ticket2_url: urlLleg2,
+        foto_ticket_llegada2_url: urlLleg2,
       })
       await loadAll()
       toast(`Ticket ${v.id} actualizado ✓`, 'ok')
@@ -258,13 +264,25 @@ export default function ModalEditarViaje({ viaje: v, onClose, onSaved }) {
         <div>
           {v.foto_ticket_salida_url && !quitarTSal && (
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:5 }}>
-              <a href={v.foto_ticket_salida_url} target="_blank" style={{ fontSize:10, color:'var(--info)' }}>Ver ticket salida actual →</a>
+              <a href={v.foto_ticket_salida_url} target="_blank" style={{ fontSize:10, color:'var(--info)' }}>Ver ticket salida {tipo==='full'?'1':''} →</a>
               <button type="button" className="btn btn-danger btn-xs" onClick={() => setQuitarTSal(true)}><i className="ti ti-trash" />Quitar</button>
             </div>
           )}
           {quitarTSal && <div style={{ fontSize:10, color:'var(--err)', marginBottom:5 }}>⚠ Foto marcada para eliminar — <button type="button" onClick={() => setQuitarTSal(false)} style={{ background:'none', border:'none', color:'var(--info)', cursor:'pointer', textDecoration:'underline', fontSize:10, padding:0 }}>deshacer</button></div>}
-          <FotoSlot label="Reemplazar ticket salida" onCapture={f => { setFotoTSal(f); setQuitarTSal(false) }} done={!!fotoTSal} />
+          <FotoSlot label={tipo==='full'?'Ticket salida 1':'Reemplazar ticket salida'} onCapture={f => { setFotoTSal(f); setQuitarTSal(false) }} done={!!fotoTSal} />
         </div>
+        {tipo === 'full' && (
+          <div>
+            {v.foto_ticket2_url && !quitarTSal2 && (
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:5 }}>
+                <a href={v.foto_ticket2_url} target="_blank" style={{ fontSize:10, color:'var(--info)' }}>Ver ticket salida 2 →</a>
+                <button type="button" className="btn btn-danger btn-xs" onClick={() => setQuitarTSal2(true)}><i className="ti ti-trash" />Quitar</button>
+              </div>
+            )}
+            {quitarTSal2 && <div style={{ fontSize:10, color:'var(--err)', marginBottom:5 }}>⚠ Foto marcada para eliminar — <button type="button" onClick={() => setQuitarTSal2(false)} style={{ background:'none', border:'none', color:'var(--info)', cursor:'pointer', textDecoration:'underline', fontSize:10, padding:0 }}>deshacer</button></div>}
+            <FotoSlot label="Ticket salida 2" onCapture={f => { setFotoTSal2(f); setQuitarTSal2(false) }} done={!!fotoTSal2} />
+          </div>
+        )}
         <div>
           {v.foto_tracto_url && !quitarTracto && (
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:5 }}>
@@ -278,7 +296,7 @@ export default function ModalEditarViaje({ viaje: v, onClose, onSaved }) {
         <div>
           {v.foto_ticket_llegada_url && !quitarLleg && (
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:5 }}>
-              <a href={v.foto_ticket_llegada_url} target="_blank" style={{ fontSize:10, color:'var(--info)' }}>Ver ticket llegada 1 →</a>
+              <a href={v.foto_ticket_llegada_url} target="_blank" style={{ fontSize:10, color:'var(--info)' }}>Ver ticket llegada {tipo==='full'?'1':''} →</a>
               <button type="button" className="btn btn-danger btn-xs" onClick={() => setQuitarLleg(true)}><i className="ti ti-trash" />Quitar</button>
             </div>
           )}
@@ -287,9 +305,9 @@ export default function ModalEditarViaje({ viaje: v, onClose, onSaved }) {
         </div>
         {tipo === 'full' && (
           <div>
-            {v.foto_ticket2_url && !quitarLleg2 && (
+            {v.foto_ticket_llegada2_url && !quitarLleg2 && (
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:5 }}>
-                <a href={v.foto_ticket2_url} target="_blank" style={{ fontSize:10, color:'var(--info)' }}>Ver ticket llegada 2 →</a>
+                <a href={v.foto_ticket_llegada2_url} target="_blank" style={{ fontSize:10, color:'var(--info)' }}>Ver ticket llegada 2 →</a>
                 <button type="button" className="btn btn-danger btn-xs" onClick={() => setQuitarLleg2(true)}><i className="ti ti-trash" />Quitar</button>
               </div>
             )}

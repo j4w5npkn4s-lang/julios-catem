@@ -34,6 +34,66 @@ export default function ModalDetallePago({ pago, onClose }) {
   const totalM3  = viajesList.reduce((a, x) => a + vM3(x.viaje), 0)
   const totalCob = viajesList.reduce((a, x) => a + vCobro(x.viaje), 0)
 
+  function imprimirComprobante() {
+    const rows = viajesList.map(({ viaje: v, monto }) => `
+      <tr>
+        <td style="font-family:monospace;font-size:11px;color:#b45309">${v.id}</td>
+        <td style="font-family:monospace">${v.tracto}</td>
+        <td>${v.tipo.toUpperCase()}</td>
+        <td>${agNombre(v.agremiado_id)}</td>
+        <td>${v.operador||'—'}</td>
+        <td style="text-align:right;font-family:monospace">${vM3(v)}</td>
+        <td style="text-align:right;font-family:monospace;color:#166534">${fmt(vCobro(v))}</td>
+        <td style="text-align:right;font-family:monospace;color:#166534;font-weight:700">${fmt(monto)}</td>
+      </tr>`).join('')
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+    <title>Comprobante de pago${pago.folio?' - '+pago.folio:''}</title>
+    <style>
+      body{font-family:sans-serif;font-size:12px;margin:24px;color:#111}
+      h1{font-size:20px;margin:0}h2{font-size:14px;margin:16px 0 6px;border-bottom:2px solid #166534;padding-bottom:4px}
+      .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0}
+      .kpi{border:1px solid #e5e7eb;border-radius:8px;padding:12px;text-align:center}
+      .kpi-l{font-size:10px;color:#6b7280;text-transform:uppercase;font-weight:700}
+      .kpi-v{font-size:20px;font-weight:700;font-family:monospace;margin-top:4px}
+      table{width:100%;border-collapse:collapse;margin-top:8px;font-size:11px}
+      th{background:#f3f4f6;padding:5px 8px;text-align:left;font-size:10px;text-transform:uppercase;border-bottom:2px solid #e5e7eb}
+      td{padding:5px 8px;border-bottom:1px solid #f3f4f6}
+      tr:nth-child(even){background:#fafafa}
+      .footer{margin-top:24px;font-size:10px;color:#9ca3af;text-align:center;border-top:1px solid #e5e7eb;padding-top:8px}
+      @media print{body{margin:12px}}
+    </style></head><body>
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
+      <div>
+        <h1 style="color:#166534">Comprobante de pago</h1>
+        <div style="font-size:13px;color:#6b7280">${pago.masivo ? 'Pago masivo' : 'Pago individual'} · Folio: ${pago.folio||'Sin folio'}</div>
+      </div>
+      <div style="margin-left:auto;text-align:right">
+        <div style="font-size:11px;color:#6b7280">JSV Tracking · Julios Catem</div>
+        <div style="font-size:11px;color:#6b7280">Fecha de pago: ${pago.fecha||'—'}</div>
+      </div>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi"><div class="kpi-l">Viajes</div><div class="kpi-v" style="color:#b45309">${viajesList.length}</div></div>
+      <div class="kpi"><div class="kpi-l">M³ Total</div><div class="kpi-v" style="color:#1d4ed8">${totalM3.toFixed(2)}</div></div>
+      <div class="kpi"><div class="kpi-l">Cobro Total</div><div class="kpi-v" style="color:#166534">${fmt(totalCob)}</div></div>
+      <div class="kpi"><div class="kpi-l">Monto Pagado</div><div class="kpi-v" style="color:#166534">${fmt(totalMonto)}</div></div>
+    </div>
+
+    <h2>Viajes incluidos en este pago</h2>
+    <table><thead><tr><th>Ticket</th><th>Tracto</th><th>Tipo</th><th>Agremiado</th><th>Operador</th><th>M³</th><th>Cobro</th><th>Pagado</th></tr></thead>
+    <tbody>${rows}</tbody></table>
+
+    <div class="footer">JSV Tracking · Generado: ${new Date().toLocaleString('es-MX')}</div>
+    <script>window.onload=()=>window.print()</script>
+    </body></html>`
+
+    const w = window.open('', '_blank')
+    w.document.write(html)
+    w.document.close()
+  }
+
   return (
     <>
       <div className="ov" onClick={e => e.target.classList.contains('ov') && onClose()}>
@@ -135,7 +195,7 @@ export default function ModalDetallePago({ pago, onClose }) {
           </div>
 
           <div className="mf">
-            <button className="btn btn-out btn-sm" onClick={() => window.print()}>
+            <button className="btn btn-out btn-sm" onClick={imprimirComprobante}>
               <i className="ti ti-printer" />Imprimir
             </button>
             <div style={{ flex: 1 }} />

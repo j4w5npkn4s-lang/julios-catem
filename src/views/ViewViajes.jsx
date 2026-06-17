@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useApp } from '../lib/AppContext'
+import { useToast } from '../components/Toast'
 import ModalDetalleViaje from '../components/ModalDetalleViaje'
 import ModalEditarViaje from '../components/ModalEditarViaje'
 import Pill from '../components/Pill'
@@ -7,7 +8,8 @@ import ModalLlegada from '../components/ModalLlegada'
 import ModalPago from '../components/ModalPago'
 
 export default function ViewViajes({ onNewTicket, searchQ = '' }) {
-  const { viajes, estimaciones, agremiados, vCobro, vPago, vUtil, vM3, fmt, reabrirViaje, perm } = useApp()
+  const { viajes, estimaciones, agremiados, vCobro, vPago, vUtil, vM3, fmt, reabrirViaje, deleteViaje, perm } = useApp()
+  const toast = useToast()
   const p = perm()
   const [fEst, setFEst]       = useState('')
   const [fStatus, setFStatus] = useState('')
@@ -18,6 +20,16 @@ export default function ViewViajes({ onNewTicket, searchQ = '' }) {
   const [detalleV, setDetalleV] = useState(null)
   const [editarV, setEditarV]   = useState(null)
   const [pagoV, setPagoV]     = useState(null)
+
+  async function handleDelete(v) {
+    if (!confirm(`¿Eliminar permanentemente el ticket ${v.id}? Esta acción no se puede deshacer.`)) return
+    try {
+      await deleteViaje(v.id)
+      toast(`Ticket ${v.id} eliminado`, 'ok')
+    } catch (err) {
+      toast(err.message, 'err')
+    }
+  }
 
   function exportarExcel(rows) {
     const headers = ['Folio','Gondola','M³','Tipo','Tracto','KM','Origen','Destino','Operador','Agremiado','Fecha Salida','Hora Salida','Fecha Llegada','Estado','Estimacion','Cobro','Pago']
@@ -146,6 +158,11 @@ export default function ViewViajes({ onNewTicket, searchQ = '' }) {
                     {v.estado === 'cerrado' && p.canTodo && (
                       <button className="btn btn-danger btn-xs" onClick={() => reabrirViaje(v.id)}>
                         <i className="ti ti-lock-open" />
+                      </button>
+                    )}
+                    {p.canTodo && (
+                      <button className="btn btn-danger btn-xs" onClick={e => { e.stopPropagation(); handleDelete(v) }} title="Eliminar ticket">
+                        <i className="ti ti-trash" />
                       </button>
                     )}
                   </td>

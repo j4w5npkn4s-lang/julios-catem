@@ -135,6 +135,13 @@ export function AppProvider({ children }) {
     await updateViaje(id, { estado: 'pendiente_conciliar' })
   }
 
+  async function deleteViaje(id) {
+    if (!perm().canTodo) throw new Error('Solo admin puede eliminar viajes')
+    const { error } = await supabase.from('viajes').delete().eq('id', id)
+    if (error) throw error
+    await loadAll()
+  }
+
   // Pagos
   async function registrarPago(viajeIds, datos) {
     const rows = viajeIds.map(viaje_id => ({
@@ -281,7 +288,7 @@ export function AppProvider({ children }) {
       agremiados, flotilla, usuarios, config,
       loadAll,
       vM3, vCobro, vPago, vUtil, fmt, today,
-      addViaje, updateViaje, registrarLlegada, mandarAPago, reabrirViaje,
+      addViaje, updateViaje, registrarLlegada, mandarAPago, reabrirViaje, deleteViaje,
       registrarPago,
       crearConciliacion, cerrarConciliacion, quitarViajeConciliacion,
       addEstimacion,

@@ -1,17 +1,33 @@
 import { useState } from 'react'
 import ModalEditarViaje from './ModalEditarViaje'
 import { useApp } from '../lib/AppContext'
+import { useToast } from './Toast'
 import ModalPago from './ModalPago'
 import Pill from './Pill'
 
 export default function ModalDetalleViaje({ viaje: v, onClose, onReabrir }) {
-  const { vCobro, vPago, vUtil, vM3, fmt, pagos, agremiados, perm, loadAll } = useApp()
+  const { vCobro, vPago, vUtil, vM3, fmt, pagos, agremiados, perm, loadAll, deleteViaje } = useApp()
+  const toast = useToast()
   const p = perm()
   const canVer = p.canVerPrecios
 
-  const [showPago, setShowPago]   = useState(false)
-  const [showEdit, setShowEdit]   = useState(false)
-  const [generando, setGenerando] = useState(false)
+  const [showPago, setShowPago]     = useState(false)
+  const [showEdit, setShowEdit]     = useState(false)
+  const [generando, setGenerando]   = useState(false)
+  const [confirmDel, setConfirmDel] = useState(false)
+  const [deleting, setDeleting]     = useState(false)
+
+  async function handleDelete() {
+    setDeleting(true)
+    try {
+      await deleteViaje(v.id)
+      toast(`Ticket ${v.id} eliminado`, 'ok')
+      onClose()
+    } catch (err) {
+      toast(err.message, 'err')
+      setDeleting(false)
+    }
+  }
 
   async function compartirViaje() {
     setGenerando(true)
@@ -324,6 +340,21 @@ _Generado por JSV Tracking_`
             <button className="btn btn-danger btn-sm" onClick={() => { onReabrir(v.id); onClose() }}>
               <i className="ti ti-lock-open" />Reabrir viaje
             </button>
+          )}
+          {p.canTodo && (
+            confirmDel ? (
+              <div style={{ display:'flex', alignItems:'center', gap:6, background:'rgba(239,68,68,.1)', border:'1px solid rgba(239,68,68,.3)', borderRadius:8, padding:'4px 8px' }}>
+                <span style={{ fontSize:11, color:'var(--err)' }}>¿Eliminar permanentemente?</span>
+                <button className="btn btn-out btn-xs" onClick={() => setConfirmDel(false)} disabled={deleting}>No</button>
+                <button className="btn btn-danger btn-xs" onClick={handleDelete} disabled={deleting}>
+                  {deleting ? 'Eliminando...' : 'Sí, eliminar'}
+                </button>
+              </div>
+            ) : (
+              <button className="btn btn-danger btn-sm" onClick={() => setConfirmDel(true)}>
+                <i className="ti ti-trash" />Eliminar
+              </button>
+            )
           )}
           <div style={{ flex: 1 }} />
           <button className="btn btn-out btn-sm" onClick={compartirViaje} disabled={generando}>

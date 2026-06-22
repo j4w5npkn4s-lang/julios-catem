@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useApp } from '../lib/AppContext'
 import ModalViajesAgremiado from '../components/ModalViajesAgremiado'
+import ViewDetalleAgremiado from './ViewDetalleAgremiado'
 import { useToast } from '../components/Toast'
 import Modal from '../components/Modal'
 import Pill from '../components/Pill'
@@ -16,7 +17,10 @@ export default function ViewAgremiados() {
   const [saving, setSaving]       = useState(false)
   const [search, setSearch]       = useState('')
   const [viajesAgr, setViajesAgr] = useState(null)
+  const [detalleAgr, setDetalleAgr] = useState(null)
   const p = perm()
+
+  if (detalleAgr) return <ViewDetalleAgremiado agremiado={detalleAgr} onBack={() => setDetalleAgr(null)} />
 
   const activos = agremiados.filter(a => a.activo !== false)
   const filtered = activos.filter(a =>

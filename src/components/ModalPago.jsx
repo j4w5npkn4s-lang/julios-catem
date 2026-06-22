@@ -9,7 +9,7 @@ export default function ModalPago({ viajes: viajesSelec, onClose, onSaved }) {
   const toast = useToast()
 
   const isMasivo  = viajesSelec.length > 1
-  const totalPago = viajesSelec.reduce((a, v) => a + vPago(v), 0)
+  const totalPago = viajesSelec.reduce((a, v) => a + (v._pagoMonto !== undefined ? v._pagoMonto : vPago(v)), 0)
 
   const [fecha, setFecha]   = useState(today())
   const [monto, setMonto]   = useState(totalPago.toFixed(2))

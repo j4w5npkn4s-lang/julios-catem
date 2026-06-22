@@ -9,7 +9,7 @@ import Modal from '../components/Modal'
 
 // ══ PAGOS ══
 export function ViewPagos({ searchQ = '' }) {
-  const { viajes, agremiados, pagos, vPago, vM3, fmt, perm } = useApp()
+  const { viajes, agremiados, pagos, vPago, vM3, fmt, perm, config } = useApp()
   const toast = useToast()
   const [fAgremiado, setFAgremiado] = useState('')
   const [fEstado, setFEstado]       = useState('sin_pagar')
@@ -21,10 +21,9 @@ export function ViewPagos({ searchQ = '' }) {
   const p = perm()
 
 
-  // Viajes filtrados
-  const vsFiltrados = viajes.filter(v => {
+  // Viajes filtrados base
+  const viajesBase = viajes.filter(v => {
     if (fEstado === 'sin_pagar') {
-      // Sin pagar = no tienen registro de pago (pagado !== true)
       if (v.pagado === true) return false
     } else if (fEstado === 'abierto') {
       if (v.estado !== 'abierto') return false
@@ -47,21 +46,48 @@ export function ViewPagos({ searchQ = '' }) {
     return true
   })
 
-  function toggleSelec(id) {
+  // Expandir Full en 2 filas (una por gondola), cada una con su folio y m3 propio
+  const vsFiltrados = []
+  viajesBase.forEach(v => {
+    if (v.tipo === 'full') {
+      // Gondola 1
+      vsFiltrados.push({ ...v, _rowId: v.id + '_g1', _gondola: 1, _folio: v.id, _m3: v.m3_1||0 })
+      // Gondola 2 — solo si tiene folio2
+      if (v.folio2) {
+        vsFiltrados.push({ ...v, _rowId: v.id + '_g2', _gondola: 2, _folio: v.folio2, _m3: v.m3_2||0 })
+      }
+    } else {
+      vsFiltrados.push({ ...v, _rowId: v.id, _gondola: null, _folio: v.id, _m3: v.m3_1||0 })
+    }
+  })
+
+  function toggleSelec(rowId) {
     const s = new Set(selec)
-    s.has(id) ? s.delete(id) : s.add(id)
+    s.has(rowId) ? s.delete(rowId) : s.add(rowId)
     setSelec(s)
   }
   function toggleAll() {
-    setSelec(selecAllSelected ? new Set() : new Set(vsFiltrados.map(v=>v.id)))
+    setSelec(selecAllSelected ? new Set() : new Set(vsFiltrados.map(v=>v._rowId)))
   }
 
   // selecViajes: seleccionados visibles con el filtro actual (para el checkbox de cabecera)
-  const selecViajes = vsFiltrados.filter(v => selec.has(v.id))
+  const selecViajes = vsFiltrados.filter(v => selec.has(v._rowId))
   const selecAllSelected = vsFiltrados.length > 0 && selecViajes.length === vsFiltrados.length
-  // selecTodos: TODOS los seleccionados acumulados, sin importar el filtro/busqueda actual (para el resumen de pago)
-  const selecTodos = viajes.filter(v => selec.has(v.id))
-  const totalPago   = selecTodos.reduce((a,v) => a + vPago(v), 0)
+  // selecTodos: TODOS los seleccionados acumulados incluyendo filas expandidas de Full
+  const selecTodos = []
+  selec.forEach(rowId => {
+    const found = [...viajesBase.flatMap(v => {
+      if (v.tipo === 'full') return [
+        { ...v, _rowId: v.id+'_g1', _gondola:1, _folio:v.id, _m3:v.m3_1||0 },
+        ...(v.folio2 ? [{ ...v, _rowId: v.id+'_g2', _gondola:2, _folio:v.folio2, _m3:v.m3_2||0 }] : [])
+      ]
+      return [{ ...v, _rowId: v.id, _gondola:null, _folio:v.id, _m3:v.m3_1||0 }]
+    })].find(r => r._rowId === rowId)
+    if (found) selecTodos.push(found)
+  })
+  // Calcular pago por gondola segun su m3 real
+  const calcPagoRow = row => +(config.tarifa_pago * row._m3 * (row.km||0)).toFixed(2)
+  const totalPago = selecTodos.reduce((a,r) => a + calcPagoRow(r), 0)
 
   // Fotos status
   const fotosBadge = v => {
@@ -138,20 +164,23 @@ export function ViewPagos({ searchQ = '' }) {
               {vsFiltrados.length ? vsFiltrados.map(v => {
                 const fb = fotosBadge(v)
                 return (
-                  <tr key={v.id} className="tr" onClick={() => setDetalleViaje(v)}>
+                  <tr key={v._rowId} className="tr" onClick={() => setDetalleViaje(v)}>
                     <td onClick={e => e.stopPropagation()} style={{width:48, textAlign:'center'}}>
-                      <div onClick={() => toggleSelec(v.id)} style={{width:22,height:22,borderRadius:5,border:`2px solid ${selec.has(v.id)?'var(--acc)':'var(--border2)'}`,background:selec.has(v.id)?'var(--acc)':'transparent',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto',flexShrink:0,transition:'all .15s'}}>
-                        {selec.has(v.id)&&<i className="ti ti-check" style={{fontSize:13,color:'#000'}}/>}
+                      <div onClick={() => toggleSelec(v._rowId)} style={{width:22,height:22,borderRadius:5,border:`2px solid ${selec.has(v._rowId)?'var(--acc)':'var(--border2)'}`,background:selec.has(v._rowId)?'var(--acc)':'transparent',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto',flexShrink:0,transition:'all .15s'}}>
+                        {selec.has(v._rowId)&&<i className="ti ti-check" style={{fontSize:13,color:'#000'}}/>}
                       </div>
                     </td>
-                    <td><span className="mono" style={{ color:'var(--acc)' }}>{v.id}</span></td>
+                    <td>
+                      <span className="mono" style={{ color:'var(--acc)', fontWeight:700 }}>{v._folio}</span>
+                      {v._gondola && <span className="pill pgr" style={{fontSize:8,marginLeft:4}}>G{v._gondola}</span>}
+                    </td>
                     <td style={{ fontSize:10 }}>{getNombreAgremiado(v.agremiado_id)}</td>
                     <td><b>{v.tracto}</b></td>
                     <td><span className={`pill ${v.tipo==='full'?'pp':'pgr'}`}>{v.tipo?.toUpperCase()}</span></td>
                     <td style={{ fontSize:10 }}>{v.operador}</td>
                     <td style={{ fontSize:10 }}>{v.fecha_salida||'—'}</td>
-                    <td className="mono">{vM3(v)}</td>
-                    <td className="mono" style={{ color:'var(--pago)' }}>{fmt(vPago(v))}</td>
+                    <td className="mono">{v._m3}</td>
+                    <td className="mono" style={{ color:'var(--pago)', fontWeight:700 }}>{fmt(+(config.tarifa_pago * v._m3 * (v.km||0)).toFixed(2))}</td>
                     <td>
                       <span className={`pill ${v.foto_ticket_salida?'pg':'pr'}`} style={{fontSize:8,marginRight:2}}>T.Sal</span>
                       <span className={`pill ${v.foto_tracto?'pg':'pr'}`} style={{fontSize:8,marginRight:2}}>Tracto</span>
@@ -169,7 +198,7 @@ export function ViewPagos({ searchQ = '' }) {
                     </td>
                     {v.pagado !== true && p.canPagar && (
                       <td onClick={e => e.stopPropagation()}>
-                        <button className="btn btn-ok btn-xs" onClick={() => setPagoVs([v])}>
+                        <button className="btn btn-ok btn-xs" onClick={() => setPagoVs([{ ...v, _pagoMonto: +(config.tarifa_pago * v._m3 * (v.km||0)).toFixed(2) }])}>
                           <i className="ti ti-cash" />Pagar
                         </button>
                       </td>
@@ -187,15 +216,16 @@ export function ViewPagos({ searchQ = '' }) {
           <div style={{ borderTop:'2px solid var(--border)', background:'var(--bg3)' }}>
             {/* Lista de tickets seleccionados con agremiado */}
             <div style={{ maxHeight: 160, overflowY: 'auto', padding: '8px 16px' }}>
-              {selecTodos.map(v => (
-                <div key={v.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'5px 0', borderBottom:'1px solid var(--border)', fontSize:11 }}>
+              {selecTodos.map(r => (
+                <div key={r._rowId} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'5px 0', borderBottom:'1px solid var(--border)', fontSize:11 }}>
                   <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-                    <span style={{ fontFamily:"'Space Mono',monospace", color:'var(--acc)', fontWeight:700 }}>{v.id}</span>
-                    <span style={{ color:'var(--muted)' }}>{getNombreAgremiado(v.agremiado_id)} · {v.tracto}</span>
+                    <span style={{ fontFamily:"'Space Mono',monospace", color:'var(--acc)', fontWeight:700 }}>{r._folio}</span>
+                    {r._gondola && <span className="pill pgr" style={{fontSize:8}}>G{r._gondola}</span>}
+                    <span style={{ color:'var(--muted)' }}>{getNombreAgremiado(r.agremiado_id)} · {r.tracto}</span>
                   </div>
                   <div style={{ display:'flex', gap:10, alignItems:'center' }}>
-                    <span style={{ fontFamily:"'Space Mono',monospace", color:'var(--pago)' }}>{fmt(vPago(v))}</span>
-                    <button className="btn btn-out btn-xs" onClick={() => toggleSelec(v.id)} title="Quitar de la seleccion">
+                    <span style={{ fontFamily:"'Space Mono',monospace", color:'var(--pago)' }}>{fmt(calcPagoRow(r))}</span>
+                    <button className="btn btn-out btn-xs" onClick={() => toggleSelec(r._rowId)} title="Quitar de la seleccion">
                       <i className="ti ti-x" />
                     </button>
                   </div>
@@ -217,7 +247,7 @@ export function ViewPagos({ searchQ = '' }) {
                 <i className="ti ti-x" />Limpiar todo
               </button>
               {p.canPagar && (
-                <button className="btn btn-ok" style={{ padding:'10px 20px', fontSize:13 }} onClick={() => setPagoVs(selecTodos)}>
+                <button className="btn btn-ok" style={{ padding:'10px 20px', fontSize:13 }} onClick={() => setPagoVs(selecTodos.map(r => ({ ...r, id: r.viaje_id || r.id, _pagoMonto: calcPagoRow(r) })))}>
                   <i className="ti ti-cash" style={{ fontSize:16 }} />Pagar {selecTodos.length} ticket{selecTodos.length!==1?'s':''}
                 </button>
               )}

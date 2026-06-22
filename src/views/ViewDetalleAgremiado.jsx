@@ -2,14 +2,18 @@ import { useState } from 'react'
 import { useApp } from '../lib/AppContext'
 import Pill from '../components/Pill'
 import ModalDetalleViaje from '../components/ModalDetalleViaje'
+import ViewInformeSubagremiado from './ViewInformeSubagremiado'
 
 export default function ViewDetalleAgremiado({ agremiado, onBack }) {
   const { viajes, estimaciones, pagos, vCobro, vPago, vM3, fmt, perm, reabrirViaje, config } = useApp()
   const [detalleViaje, setDetalleViaje] = useState(null)
+  const [verInforme, setVerInforme] = useState(false)
   const [filtroEstado, setFiltroEstado] = useState('')
   const [filtroFechaI, setFiltroFechaI] = useState('')
   const [filtroFechaF, setFiltroFechaF] = useState('')
   const p = perm()
+
+  if (verInforme) return <ViewInformeSubagremiado agremiado={agremiado} onBack={() => setVerInforme(false)} />
 
   const vs = viajes.filter(v => v.agremiado_id === agremiado.id)
   const filtered = vs.filter(v => {
@@ -96,6 +100,11 @@ export default function ViewDetalleAgremiado({ agremiado, onBack }) {
           style={{ height:28, fontSize:11, padding:'0 7px', background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:6, color:'var(--text)' }} title="Hasta" />
         <div style={{flex:1}} />
         <button className="btn btn-out btn-sm" onClick={exportarExcel}><i className="ti ti-table-export"/>Excel</button>
+        {agremiado.tarifa_propia && p.canVerPrecios && (
+          <button className="btn btn-acc btn-sm" onClick={() => setVerInforme(true)}>
+            <i className="ti ti-file-analytics"/>Informe sub-agremiado
+          </button>
+        )}
       </div>
 
       {/* Lista de viajes con fotos */}

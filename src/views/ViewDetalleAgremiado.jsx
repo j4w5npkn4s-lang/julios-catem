@@ -100,7 +100,7 @@ export default function ViewDetalleAgremiado({ agremiado, onBack }) {
           style={{ height:28, fontSize:11, padding:'0 7px', background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:6, color:'var(--text)' }} title="Hasta" />
         <div style={{flex:1}} />
         <button className="btn btn-out btn-sm" onClick={exportarExcel}><i className="ti ti-table-export"/>Excel</button>
-        {agremiado.tarifa_propia && p.canVerPrecios && (
+        {agremiado.tarifa_propia && p.canTodo && (
           <button className="btn btn-acc btn-sm" onClick={() => setVerInforme(true)}>
             <i className="ti ti-file-analytics"/>Informe sub-agremiado
           </button>

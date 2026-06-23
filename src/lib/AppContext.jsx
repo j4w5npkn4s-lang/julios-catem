@@ -24,6 +24,7 @@ export function AppProvider({ children }) {
   const [flotilla, setFlotilla]           = useState([])
   const [usuarios, setUsuarios]           = useState([])
   const [config, setConfig]               = useState({ tarifa_cobro: 0, tarifa_pago: 0, empresa: 'Julios Catem', obra: 'Obra Veracruz (Tehuantepec)' })
+  const [pagosRocio, setPagosRocio]       = useState([])
 
   async function login(email, password) {
     const { data, error } = await supabase
@@ -59,6 +60,7 @@ export function AppProvider({ children }) {
         supabase.from('flotilla').select('*, agremiados(nombre)').order('placa_tracto'),
         supabase.from('usuarios').select('id,nombre,email,rol,sede,color,activo,created_at'),
         supabase.from('configuracion').select('*').single(),
+        supabase.from('pagos_rocio').select('*').order('created_at', { ascending: false }),
       ])
       if (v.data)   setViajes(v.data)
       if (e.data)   setEstimaciones(e.data)
@@ -70,6 +72,8 @@ export function AppProvider({ children }) {
       if (fl.data)  setFlotilla(fl.data)
       if (u.data)   setUsuarios(u.data)
       if (cfg.data) setConfig(cfg.data)
+      const pr = await supabase.from('pagos_rocio').select('*').order('created_at', { ascending: false })
+      if (pr.data) setPagosRocio(pr.data)
     } catch (err) {
       console.error('Error loading data:', err)
     }
@@ -133,6 +137,20 @@ export function AppProvider({ children }) {
   async function reabrirViaje(id) {
     if (!perm().canTodo) throw new Error('Solo admin puede reabrir viajes')
     await updateViaje(id, { estado: 'pendiente_conciliar' })
+  }
+
+  // Pagos internos Rocío (solo admin, invisible para otros roles)
+  async function addPagoRocio(datos) {
+    const { error } = await supabase.from('pagos_rocio').insert([datos])
+    if (error) throw error
+    const pr = await supabase.from('pagos_rocio').select('*').order('created_at', { ascending: false })
+    if (pr.data) setPagosRocio(pr.data)
+  }
+  async function deletePagoRocio(id) {
+    const { error } = await supabase.from('pagos_rocio').delete().eq('id', id)
+    if (error) throw error
+    const pr = await supabase.from('pagos_rocio').select('*').order('created_at', { ascending: false })
+    if (pr.data) setPagosRocio(pr.data)
   }
 
   async function deleteViaje(id) {
@@ -289,6 +307,7 @@ export function AppProvider({ children }) {
       loadAll,
       vM3, vCobro, vPago, vUtil, fmt, today,
       addViaje, updateViaje, registrarLlegada, mandarAPago, reabrirViaje, deleteViaje,
+      pagosRocio, addPagoRocio, deletePagoRocio,
       registrarPago,
       crearConciliacion, cerrarConciliacion, quitarViajeConciliacion,
       addEstimacion,

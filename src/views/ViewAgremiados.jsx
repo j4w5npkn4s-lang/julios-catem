@@ -83,15 +83,16 @@ export default function ViewAgremiados() {
         {filtered.map(a => {
           const nCam = camionesCount(a.id)
           return (
-            <div key={a.id} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: 16 }}>
+            <div key={a.id} onClick={() => setDetalleAgr(a)} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: 16, cursor: 'pointer', transition: 'border .15s' }}
+              onMouseOver={e=>e.currentTarget.style.borderColor='var(--acc)'}
+              onMouseOut={e=>e.currentTarget.style.borderColor='var(--border)'}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 700 }}>{a.nombre}</div>
                   {a.telefono && <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}><i className="ti ti-phone" style={{ fontSize: 10, marginRight: 4 }} />{a.telefono}</div>}
                   {a.correo   && <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 1 }}><i className="ti ti-mail"  style={{ fontSize: 10, marginRight: 4 }} />{a.correo}</div>}
                 </div>
-                <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
-                  <button className="btn btn-info btn-xs" onClick={() => setViajesAgr(a)} title="Ver viajes"><i className="ti ti-truck" /></button>
+                <div style={{ display: 'flex', gap: 5, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
                   {p.canConfig && <button className="btn btn-out btn-xs" onClick={() => openEdit(a)}><i className="ti ti-edit" /></button>}
                   {p.canTodo   && <button className="btn btn-danger btn-xs" onClick={() => handleDelete(a)}><i className="ti ti-trash" /></button>}
                 </div>

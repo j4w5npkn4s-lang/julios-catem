@@ -3,6 +3,7 @@ import { useApp } from '../lib/AppContext'
 import Pill from '../components/Pill'
 import ModalDetalleViaje from '../components/ModalDetalleViaje'
 import { useToast } from '../components/Toast'
+import html2canvas from 'html2canvas'
 
 export default function ViewInformeSubagremiado({ agremiado, onBack }) {
   const { viajes, estimaciones, pagosRocio, addPagoRocio, deletePagoRocio,
@@ -101,6 +102,23 @@ export default function ViewInformeSubagremiado({ agremiado, onBack }) {
     if (!confirm('¿Eliminar este registro de pago?')) return
     try { await deletePagoRocio(id); toast('Eliminado','ok') }
     catch(err) { toast(err.message,'err') }
+  }
+
+  async function exportarLiquidacion() {
+    const el = document.getElementById('cuadro-liquidacion')
+    if (!el) return
+    const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#1a1a2e', useCORS: true })
+    const url = canvas.toDataURL('image/png')
+    // Intentar compartir (móvil) o descargar (escritorio)
+    if (navigator.share && navigator.canShare) {
+      const blob = await (await fetch(url)).blob()
+      const file = new File([blob], `liquidacion-${agremiado.nombre.replace(/\s+/g,'-')}-${today()}.png`, { type:'image/png' })
+      try { await navigator.share({ files:[file], title:'Liquidación '+agremiado.nombre }); return } catch {}
+    }
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `liquidacion-${agremiado.nombre.replace(/\s+/g,'-')}-${today()}.png`
+    a.click()
   }
 
   const tipoLabel = { carga:'Al cargar', liquidacion:'Al liquidar', adelanto:'Adelanto/Abono' }
@@ -230,9 +248,14 @@ export default function ViewInformeSubagremiado({ agremiado, onBack }) {
 
           {/* Resumen de liquidación de los seleccionados */}
           {selecCobrados.size>0 && (
-            <div style={{ background:'var(--bg3)', border:'2px solid var(--acc)', borderRadius:12, padding:'14px 16px', marginTop:8, marginBottom:8 }}>
-              <div style={{ fontSize:12, fontWeight:700, color:'var(--acc)', marginBottom:10, textTransform:'uppercase', letterSpacing:'.5px' }}>
-                <i className="ti ti-calculator" style={{marginRight:6}}/>Liquidación — {selecCobrados.size} viaje{selecCobrados.size!==1?'s':''} seleccionado{selecCobrados.size!==1?'s':''}
+            <div id="cuadro-liquidacion" style={{ background:'var(--bg3)', border:'2px solid var(--acc)', borderRadius:12, padding:'14px 16px', marginTop:8, marginBottom:8 }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
+                <div style={{ fontSize:12, fontWeight:700, color:'var(--acc)', textTransform:'uppercase', letterSpacing:'.5px' }}>
+                  <i className="ti ti-calculator" style={{marginRight:6}}/>Liquidación — {selecCobrados.size} viaje{selecCobrados.size!==1?'s':''} seleccionado{selecCobrados.size!==1?'s':''}
+                </div>
+                <button className="btn btn-out btn-xs" onClick={exportarLiquidacion}>
+                  <i className="ti ti-download"/>Exportar imagen
+                </button>
               </div>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10, marginBottom:12 }}>
                 <div style={{ textAlign:'center', background:'var(--bg2)', borderRadius:8, padding:'10px' }}>

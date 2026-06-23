@@ -146,6 +146,12 @@ export function AppProvider({ children }) {
     const pr = await supabase.from('pagos_rocio').select('*').order('created_at', { ascending: false })
     if (pr.data) setPagosRocio(pr.data)
   }
+  async function marcarCobradoSindicato(viajeId, cobrado) {
+    const { error } = await supabase.from('viajes').update({ cobrado_sindicato: cobrado }).eq('id', viajeId)
+    if (error) throw error
+    await loadAll()
+  }
+
   async function deletePagoRocio(id) {
     const { error } = await supabase.from('pagos_rocio').delete().eq('id', id)
     if (error) throw error
@@ -307,7 +313,7 @@ export function AppProvider({ children }) {
       loadAll,
       vM3, vCobro, vPago, vUtil, fmt, today,
       addViaje, updateViaje, registrarLlegada, mandarAPago, reabrirViaje, deleteViaje,
-      pagosRocio, addPagoRocio, deletePagoRocio,
+      pagosRocio, addPagoRocio, deletePagoRocio, marcarCobradoSindicato,
       registrarPago,
       crearConciliacion, cerrarConciliacion, quitarViajeConciliacion,
       addEstimacion,

@@ -24,7 +24,8 @@ export default function ViewInformeSubagremiado({ agremiado, onBack }) {
   const [formNotas,   setFormNotas]   = useState('')
 
   const tarifaCobro = config.tarifa_pago
-  const tarifaPago  = agremiado.tarifa_propia || config.tarifa_pago
+  const tarifaPagoBase = agremiado.tarifa_propia || config.tarifa_pago
+  const getTarifaPago = v => v.tarifa_propia_override || tarifaPagoBase
 
   const vs = viajes.filter(v => v.agremiado_id === agremiado.id)
   const filtered = vs.filter(v => {
@@ -38,15 +39,15 @@ export default function ViewInformeSubagremiado({ agremiado, onBack }) {
 
   const getM3     = v => (v.m3_1||0) + (v.m3_2||0)
   const calcCobro = (m3,km) => +(tarifaCobro * m3 * km).toFixed(2)
-  const calcPago  = (m3,km) => +(tarifaPago  * m3 * km).toFixed(2)
-  const calcUtil  = (m3,km) => +((tarifaCobro - tarifaPago) * m3 * km).toFixed(2)
+  const calcPago  = (m3,km,v) => +((v ? getTarifaPago(v) : tarifaPagoBase) * m3 * km).toFixed(2)
+  const calcUtil  = (m3,km,v) => +((tarifaCobro - (v ? getTarifaPago(v) : tarifaPagoBase)) * m3 * km).toFixed(2)
   const getPagosViaje = id => pagosRocio.filter(p => p.viaje_id === id)
 
   // Resumen de viajes seleccionados de "cobrados"
   const selecViajes = cobrados.filter(v => selecCobrados.has(v.id))
   const resumen = selecViajes.reduce((acc, v) => {
     const m3 = getM3(v), km = v.km||0
-    const util = calcUtil(m3, km)
+    const util = calcUtil(m3, km, v)
     const ps = getPagosViaje(v.id)
     const invDM = ps.reduce((a,p)=>a+(p.monto_dm||0),0)
     const invAG = ps.reduce((a,p)=>a+(p.monto_ag||0),0)
@@ -82,7 +83,7 @@ export default function ViewInformeSubagremiado({ agremiado, onBack }) {
     setModalPago(viaje)
     setFormFecha(today())
     setFormTipo('carga')
-    const mitad = (calcPago(getM3(viaje), viaje.km||0)/2).toFixed(2)
+    const mitad = (calcPago(getM3(viaje), viaje.km||0, viaje)/2).toFixed(2)
     setFormMontoDM(mitad); setFormMontoAG(mitad); setFormNotas('')
   }
 
@@ -133,7 +134,7 @@ export default function ViewInformeSubagremiado({ agremiado, onBack }) {
 
   const ViajeCard = ({ v, showCheck=false }) => {
     const m3=getM3(v), km=v.km||0
-    const aPagar=calcPago(m3,km), util=calcUtil(m3,km)
+    const aPagar=calcPago(m3,km,v), util=calcUtil(m3,km,v)
     const ps=getPagosViaje(v.id)
     const pagDM=ps.reduce((a,p)=>a+(p.monto_dm||0),0)
     const pagAG=ps.reduce((a,p)=>a+(p.monto_ag||0),0)
@@ -218,7 +219,7 @@ export default function ViewInformeSubagremiado({ agremiado, onBack }) {
         <div>
           <div style={{ fontSize:16, fontWeight:700 }}>Informe interno — {agremiado.nombre}</div>
           <div style={{ fontSize:11, color:'var(--muted)' }}>
-            JSV cobra: ${tarifaCobro}/m³/km · JSV paga: ${tarifaPago}/m³/km · Diferencia: ${(tarifaCobro-tarifaPago).toFixed(2)}/m³/km
+            JSV cobra: ${tarifaCobro}/m³/km · JSV paga: ${tarifaPagoBase}/m³/km (tarifa actual) · Diferencia: ${(tarifaCobro-tarifaPagoBase).toFixed(2)}/m³/km
           </div>
         </div>
       </div>
@@ -316,7 +317,7 @@ export default function ViewInformeSubagremiado({ agremiado, onBack }) {
             <div className="mh">
               <div>
                 <div style={{fontWeight:700}}>Registrar pago a {agremiado.nombre.split(' ')[0]}</div>
-                <div style={{fontSize:11,color:'var(--muted)'}}>{modalPago.id} · Total: {fmt(calcPago(getM3(modalPago),modalPago.km||0))}</div>
+                <div style={{fontSize:11,color:'var(--muted)'}}>{modalPago.id} · Total: {fmt(calcPago(getM3(modalPago),modalPago.km||0,modalPago))}</div>
               </div>
               <button className="mx" onClick={()=>setModalPago(null)}>×</button>
             </div>
@@ -355,7 +356,7 @@ export default function ViewInformeSubagremiado({ agremiado, onBack }) {
                   <div style={{fontSize:11,marginTop:6,color:'var(--muted)'}}>
                     Total: <b style={{fontFamily:"'Space Mono',monospace",color:'var(--ok)'}}>{fmt((parseFloat(formMontoDM)||0)+(parseFloat(formMontoAG)||0))}</b>
                     <button type="button" style={{marginLeft:12,fontSize:10,background:'none',border:'none',color:'var(--info)',cursor:'pointer',textDecoration:'underline'}}
-                      onClick={()=>{const m=(calcPago(getM3(modalPago),modalPago.km||0)/2).toFixed(2);setFormMontoDM(m);setFormMontoAG(m)}}>
+                      onClick={()=>{const m=(calcPago(getM3(modalPago),modalPago.km||0,modalPago)/2).toFixed(2);setFormMontoDM(m);setFormMontoAG(m)}}>
                       Dividir 50/50
                     </button>
                   </div>

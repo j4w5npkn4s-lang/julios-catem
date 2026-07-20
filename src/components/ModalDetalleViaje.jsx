@@ -6,13 +6,15 @@ import ModalPago from './ModalPago'
 import Pill from './Pill'
 
 export default function ModalDetalleViaje({ viaje: v, onClose, onReabrir }) {
-  const { vCobro, vPago, vUtil, vM3, fmt, pagos, agremiados, perm, loadAll, deleteViaje } = useApp()
+  const { vCobro, vPago, vUtil, vM3, fmt, pagos, agremiados, estimaciones, perm, loadAll, deleteViaje } = useApp()
   const toast = useToast()
   const p = perm()
   const canVer = p.canVerPrecios
 
   const [showPago, setShowPago]     = useState(false)
   const [showEdit, setShowEdit]     = useState(false)
+  const estViaje   = estimaciones?.find(e => e.id === v.estimacion_id)
+  const estCerrada = estViaje?.estado === 'cerrada'
   const [generando, setGenerando]   = useState(false)
   const [confirmDel, setConfirmDel] = useState(false)
   const [deleting, setDeleting]     = useState(false)
@@ -360,10 +362,14 @@ _Generado por JSV Tracking_`
           <button className="btn btn-out btn-sm" onClick={compartirViaje} disabled={generando}>
             <i className="ti ti-brand-whatsapp" />{generando ? 'Generando...' : 'Compartir'}
           </button>
-          {(p.canTodo || p.canRegistrar) && p.canConfig !== false && p.canTodo && (
-            <button className="btn btn-out btn-sm" onClick={() => setShowEdit(true)}>
-              <i className="ti ti-edit" />Editar ticket
-            </button>
+          {p.canTodo && (
+            estCerrada
+              ? <button className="btn btn-out btn-sm" style={{opacity:.5}} title="Estimación cerrada — reabre para editar" disabled>
+                  <i className="ti ti-lock" />Estimación cerrada
+                </button>
+              : <button className="btn btn-out btn-sm" onClick={() => setShowEdit(true)}>
+                  <i className="ti ti-edit" />Editar ticket
+                </button>
           )}
           {v.pagado !== true && p.canPagar && (
             <button className="btn btn-ok btn-sm" onClick={() => setShowPago(true)}>

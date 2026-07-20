@@ -9,6 +9,7 @@ import ModalPago from '../components/ModalPago'
 
 export default function ViewViajes({ onNewTicket, searchQ = '' }) {
   const { viajes, estimaciones, agremiados, vCobro, vPago, vUtil, vM3, fmt, reabrirViaje, deleteViaje, perm, config } = useApp()
+  const isEstCerrada = v => { const e = estimaciones?.find(e=>e.id===v.estimacion_id); return e?.estado==='cerrada' }
   const toast = useToast()
   const p = perm()
   const [fEst, setFEst]       = useState('')
@@ -156,9 +157,13 @@ export default function ViewViajes({ onNewTicket, searchQ = '' }) {
                       </button>
                     )}
                     {p.canTodo && (
-                      <button className="btn btn-out btn-xs" onClick={e => { e.stopPropagation(); setEditarV(v) }}>
-                        <i className="ti ti-edit" />
-                      </button>
+                      isEstCerrada(v)
+                        ? <button className="btn btn-out btn-xs" disabled style={{opacity:.4}} title="Estimación cerrada">
+                            <i className="ti ti-lock" />
+                          </button>
+                        : <button className="btn btn-out btn-xs" onClick={e => { e.stopPropagation(); setEditarV(v) }}>
+                            <i className="ti ti-edit" />
+                          </button>
                     )}
                     {v.estado === 'cerrado' && p.canTodo && (
                       <button className="btn btn-danger btn-xs" onClick={() => reabrirViaje(v.id)}>

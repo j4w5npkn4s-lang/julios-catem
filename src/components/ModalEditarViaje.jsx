@@ -144,7 +144,11 @@ export default function ModalEditarViaje({ viaje: v, onClose, onSaved }) {
     }
   }
 
-  const estAbiertas = estimaciones.filter(e => e.estado === 'abierta')
+  // Estimacion actual del viaje (puede estar cerrada)
+  const estActual = estimaciones.find(e => e.id === v.estimacion_id)
+  const estCerrada = estActual && estActual.estado === 'cerrada'
+  // Solo mostrar estimaciones abiertas + la actual si está cerrada
+  const estOpciones = estimaciones.filter(e => e.estado === 'abierta' || e.id === v.estimacion_id)
 
   const QuitarFoto = ({ url, label, quitar, setQuitar }) => (
     <>
@@ -177,9 +181,14 @@ export default function ModalEditarViaje({ viaje: v, onClose, onSaved }) {
     <Modal title={`Editar ticket · ${v.id}`} onClose={onClose} lg
       footer={<>
         <button className="btn btn-out" onClick={onClose}>Cancelar</button>
-        <button className="btn btn-acc" onClick={handleSave} disabled={saving}>
-          <i className="ti ti-device-floppy" />{saving ? 'Guardando...' : 'Guardar cambios'}
-        </button>
+        {estCerrada
+          ? <div style={{ fontSize:11, color:'var(--err)', display:'flex', alignItems:'center', gap:6 }}>
+              <i className="ti ti-lock" />Estimación cerrada · Reabre la estimación para editar
+            </div>
+          : <button className="btn btn-acc" onClick={handleSave} disabled={saving}>
+              <i className="ti ti-device-floppy" />{saving ? 'Guardando...' : 'Guardar cambios'}
+            </button>
+        }
       </>}>
 
       {/* TIPO */}
@@ -307,10 +316,11 @@ export default function ModalEditarViaje({ viaje: v, onClose, onSaved }) {
         </div>
         <div className="fg">
           <label>Estimación <span style={{ fontWeight:400, fontSize:9, textTransform:'none', letterSpacing:0, color:'var(--muted)' }}>(opcional)</span></label>
-          <select value={estId} onChange={e => setEstId(e.target.value)}>
+          <select value={estId} onChange={e => setEstId(e.target.value)} disabled={estCerrada}>
             <option value="">— Sin estimación —</option>
-            {estAbiertas.map(e => <option key={e.id} value={e.id}>{e.id}</option>)}
+            {estOpciones.map(e => <option key={e.id} value={e.id}>{e.id}{e.estado==='cerrada'?' (cerrada)':''}</option>)}
           </select>
+          {estCerrada && <div style={{ fontSize:10, color:'var(--err)', marginTop:4 }}>⚠ Estimación cerrada — no se puede cambiar</div>}
         </div>
       </div>
       <div className="fg" style={{ marginTop:6 }}>

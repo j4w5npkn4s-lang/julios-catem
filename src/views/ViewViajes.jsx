@@ -13,6 +13,16 @@ export default function ViewViajes({ onNewTicket, searchQ = '' }) {
   const toast = useToast()
   const p = perm()
   const [fEst, setFEst]       = useState('')
+  const [sortCol, setSortCol] = useState('fecha_salida')
+  const [sortDir, setSortDir] = useState('desc')
+
+  function toggleSort(col) {
+    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortCol(col); setSortDir('asc') }
+  }
+  const SortIcon = ({ col }) => sortCol === col
+    ? <i className={`ti ti-arrow-${sortDir==='asc'?'up':'down'}`} style={{fontSize:10, marginLeft:3}}/>
+    : <i className="ti ti-arrows-sort" style={{fontSize:10, marginLeft:3, opacity:.3}}/>
   const [fStatus, setFStatus] = useState('')
   const [fFecha, setFFecha]   = useState('')
   const [fFechaF, setFFechaF] = useState('')

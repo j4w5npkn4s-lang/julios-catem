@@ -98,13 +98,24 @@ export default function ModalDetallePago({ pago, onClose }) {
         </div>`
     }).join('')
 
-    const comprobanteHtml = comprobantesB64.length > 0
-      ? `<h2>Comprobante${comprobantesB64.length>1?'s':''} de pago</h2>
+    const comprobanteHtml = comprobantesUrls.length > 0
+      ? `<h2>Comprobante${comprobantesUrls.length>1?'s':''} de pago</h2>
          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">
-           ${comprobantesB64.map((b64,i) => b64
-             ? `<div style="text-align:center"><div style="font-size:10px;color:#6b7280;margin-bottom:4px">Comprobante ${comprobantesB64.length>1?i+1:''}</div><img src="${b64}" style="max-width:100%;max-height:400px;border:1px solid #e5e7eb;border-radius:8px" /></div>`
-             : `<div style="padding:20px;color:#991b1b;background:#fef2f2;border-radius:8px">Error al cargar comprobante ${i+1}</div>`
-           ).join('')}
+           ${comprobantesUrls.map((url, i) => {
+             const isPdf = url.toLowerCase().includes('.pdf') || url.toLowerCase().includes('application/pdf')
+             const b64 = comprobantesB64[i]
+             const label = comprobantesUrls.length > 1 ? `Comprobante ${i+1}` : 'Comprobante'
+             if (isPdf) {
+               return `<div style="border:1px solid #e5e7eb;border-radius:8px;padding:20px;text-align:center;background:#f9fafb;min-width:200px">
+                 <div style="font-size:24px;margin-bottom:8px">📄</div>
+                 <div style="font-size:11px;color:#6b7280;margin-bottom:8px">${label} (PDF)</div>
+                 <a href="${url}" target="_blank" style="background:#166534;color:#fff;padding:6px 12px;border-radius:6px;text-decoration:none;font-size:11px">Abrir PDF →</a>
+               </div>`
+             }
+             return b64
+               ? `<div style="text-align:center"><div style="font-size:10px;color:#6b7280;margin-bottom:4px">${label}</div><img src="${b64}" style="max-width:100%;max-height:400px;border:1px solid #e5e7eb;border-radius:8px" /></div>`
+               : `<div style="padding:20px;color:#991b1b;background:#fef2f2;border-radius:8px">Error al cargar ${label}</div>`
+           }).join('')}
          </div>`
       : `<h2>Comprobante de pago</h2><div style="padding:20px;text-align:center;color:#991b1b;background:#fef2f2;border-radius:8px;margin-bottom:16px">Sin comprobante adjunto</div>`
 

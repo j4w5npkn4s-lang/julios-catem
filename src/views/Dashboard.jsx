@@ -140,14 +140,14 @@ export default function Dashboard({ onNewTicket, searchQ = '' }) {
               </div>
               <div className="tw">
                 <table>
-                  <thead><tr><th>TICKET</th><th>TRACTO</th><th>M³</th><th>COBRO</th><th>FECHA</th></tr></thead>
+                  <thead><tr><th>TICKET</th><th>TRACTO</th><th>M³</th>{p.canVerPrecios && <th>COBRO</th>}<th>FECHA</th></tr></thead>
                   <tbody>
                     {pendConcil.length ? pendConcil.map(v => (
                       <tr key={v.id} className="tr" onClick={() => setDetalleV(v)}>
                         <td><span className="mono" style={{ color: 'var(--acc)' }}>{v.id}</span></td>
                         <td>{v.tracto}</td>
                         <td className="mono">{vM3(v)}</td>
-{canVer && <td className="mono" style={{ color: 'var(--cobro)' }}>{fmt(vCobro(v))}</td>}
+{p.canVerPrecios && <td className="mono" style={{ color: 'var(--cobro)' }}>{fmt(vCobro(v))}</td>}
                         <td>{v.fecha_salida || '—'}</td>
                       </tr>
                     )) : (

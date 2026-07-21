@@ -31,10 +31,15 @@ export default function ModalDetallePago({ pago, onClose }) {
 
   const agNombre = id => agremiados.find(a => a.id === id)?.nombre || '—'
 
+  // Todos los comprobantes únicos del grupo de pago
+  const comprobantesUrls = pago.masivo && pago.folio_masivo
+    ? [...new Set(pagos.filter(p => p.folio_masivo === pago.folio_masivo && p.comprobante_url).map(p => p.comprobante_url))]
+    : pago.comprobante_url ? [pago.comprobante_url] : []
+
   const totalM3  = viajesList.reduce((a, x) => a + vM3(x.viaje), 0)
   const totalCob = viajesList.reduce((a, x) => a + vCobro(x.viaje), 0)
 
-  function imprimirComprobante() {
+  async function imprimirComprobante() {
     const rows = viajesList.map(({ viaje: v, monto }) => `
       <tr>
         <td style="font-family:monospace;font-size:11px;color:#b45309">${v.id}</td>
@@ -46,7 +51,27 @@ export default function ModalDetallePago({ pago, onClose }) {
         <td style="text-align:right;font-family:monospace;color:#166534;font-weight:700">${fmt(monto)}</td>
       </tr>`).join('')
 
+    // Convertir imagen URL a base64 para evitar CORS en ventana de impresión
+    const toBase64 = async url => {
+      try {
+        const res = await fetch(url)
+        const blob = await res.blob()
+        return new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(blob) })
+      } catch { return null }
+    }
+
+    // Precargar todos los comprobantes como base64
+    const comprobantesB64 = await Promise.all(comprobantesUrls.map(toBase64))
+
     // Tarjetas con fotos de tickets por cada viaje incluido
+    // Precargar fotos de tickets como base64
+    const allFotoUrls = viajesList.flatMap(({viaje:v}) => [
+      v.foto_ticket_salida_url, v.foto_ticket2_url, v.foto_tracto_url,
+      v.foto_ticket_llegada_url, v.foto_ticket_llegada2_url
+    ].filter(Boolean))
+    const fotoB64Map = {}
+    await Promise.all(allFotoUrls.map(async url => { fotoB64Map[url] = await toBase64(url) }))
+
     const fotosViajes = viajesList.map(({ viaje: v }) => {
       const fotos = [
         { label: 'Ticket salida', url: v.foto_ticket_salida_url },
@@ -58,8 +83,8 @@ export default function ModalDetallePago({ pago, onClose }) {
       const imgs = fotos.map(f => `
         <div style="flex:1;min-width:140px">
           <div style="font-size:9px;color:#6b7280;text-transform:uppercase;font-weight:700;margin-bottom:4px">${f.label}</div>
-          ${f.url
-            ? `<img src="${f.url}" style="width:100%;height:140px;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb" />`
+          ${f.url && fotoB64Map[f.url]
+            ? `<img src="${'${fotoB64Map[f.url]}'}" style="width:100%;height:140px;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb" />`
             : `<div style="width:100%;height:140px;background:#fef2f2;color:#991b1b;display:flex;align-items:center;justify-content:center;border-radius:6px;font-size:11px;text-align:center">Sin foto</div>`
           }
         </div>`).join('')
@@ -73,13 +98,15 @@ export default function ModalDetallePago({ pago, onClose }) {
         </div>`
     }).join('')
 
-    const comprobanteHtml = pago.comprobante_url ? `
-      <h2>Comprobante de pago</h2>
-      <div style="text-align:center;margin-bottom:16px">
-        <img src="${pago.comprobante_url}" style="max-width:100%;max-height:500px;border:1px solid #e5e7eb;border-radius:8px" />
-      </div>` : `
-      <h2>Comprobante de pago</h2>
-      <div style="padding:20px;text-align:center;color:#991b1b;background:#fef2f2;border-radius:8px;margin-bottom:16px">Sin comprobante adjunto</div>`
+    const comprobanteHtml = comprobantesB64.length > 0
+      ? `<h2>Comprobante${comprobantesB64.length>1?'s':''} de pago</h2>
+         <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+           ${comprobantesB64.map((b64,i) => b64
+             ? `<div style="text-align:center"><div style="font-size:10px;color:#6b7280;margin-bottom:4px">Comprobante ${comprobantesB64.length>1?i+1:''}</div><img src="${b64}" style="max-width:100%;max-height:400px;border:1px solid #e5e7eb;border-radius:8px" /></div>`
+             : `<div style="padding:20px;color:#991b1b;background:#fef2f2;border-radius:8px">Error al cargar comprobante ${i+1}</div>`
+           ).join('')}
+         </div>`
+      : `<h2>Comprobante de pago</h2><div style="padding:20px;text-align:center;color:#991b1b;background:#fef2f2;border-radius:8px;margin-bottom:16px">Sin comprobante adjunto</div>`
 
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
     <title>Comprobante de pago${pago.folio?' - '+pago.folio:''}</title>

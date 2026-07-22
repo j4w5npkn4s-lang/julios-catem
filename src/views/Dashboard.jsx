@@ -1,252 +1,373 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import ModalDetalleViaje from '../components/ModalDetalleViaje'
 import { useApp } from '../lib/AppContext'
 import Pill from '../components/Pill'
 import ModalLlegada from '../components/ModalLlegada'
-import ModalPago from '../components/ModalPago'
 import ModalConciliacion from '../components/ModalConciliacion'
 
+// Semana lunes-domingo: devuelve {inicio, fin} de la semana que contiene 'fecha'
+function semanaDeDate(d) {
+  const date = new Date(d + 'T12:00:00')
+  const day = date.getDay() // 0=dom, 1=lun...
+  const diffLunes = (day === 0 ? -6 : 1 - day)
+  const lunes = new Date(date); lunes.setDate(date.getDate() + diffLunes)
+  const domingo = new Date(lunes); domingo.setDate(lunes.getDate() + 6)
+  const fmt = d => d.toISOString().slice(0,10)
+  return { inicio: fmt(lunes), fin: fmt(domingo) }
+}
+
+function semanaActual() {
+  return semanaDeDate(new Date().toISOString().slice(0,10))
+}
+
+function tiempoEntregaHoras(v) {
+  if (!v.fecha_salida || !v.fecha_llegada) return null
+  const sal = new Date(`${v.fecha_salida}T${v.hora_salida||'00:00'}:00`)
+  const lle = new Date(`${v.fecha_llegada}T${v.hora_llegada||'00:00'}:00`)
+  const diff = (lle - sal) / 3600000 // horas
+  return diff > 0 ? diff : null
+}
+
 export default function Dashboard({ onNewTicket, searchQ = '' }) {
-  const { viajes, estimaciones, pagos, vCobro, vPago, vUtil, vM3, fmt, mandarAPago, perm } = useApp()
-  const [tab, setTab] = useState('atencion')
-  const [llegadaV, setLlegadaV] = useState(null)
-  const [pagoVs, setPagoVs]     = useState(null)
-  const [showConcil, setShowConcil] = useState(false)
-  const [selPago, setSelPago]   = useState(new Set())
+  const { viajes, estimaciones, agremiados, vCobro, vPago, vM3, fmt, mandarAPago, reabrirViaje, perm } = useApp()
+  const [tab, setTab]           = useState('pendientes')
   const [detalleV, setDetalleV] = useState(null)
+  const [llegadaV, setLlegadaV] = useState(null)
+  const [showConcil, setShowConcil] = useState(false)
+
+  // Filtros Pendientes
+  const [fAgr, setFAgr]   = useState('')
+  const [fDesde, setFDesde] = useState('')
+  const [fHasta, setFHasta] = useState('')
+  const [sortCol, setSortCol] = useState('fecha_salida')
+  const [sortDir, setSortDir] = useState('asc')
+
+  // Filtros Histórico/General
+  const [hAgr, setHAgr]     = useState('')
+  const [hDesde, setHDesde] = useState('')
+  const [hHasta, setHHasta] = useState('')
+  const [hSortCol, setHSortCol] = useState('fecha_salida')
+  const [hSortDir, setHSortDir] = useState('desc')
 
   const p = perm() || {}
+  const getNombre = id => agremiados?.find(a=>a.id===id)?.nombre || '—'
+  const today = new Date().toISOString().slice(0,10)
+  const semana = semanaActual()
 
-  // DASH 1: REQUIEREN ATENCIÓN
-  const conProblema = viajes.filter(v => {
-    if (v.estado === 'cerrado') return false
-    const sinLlegada = v.estado === 'abierto' && !v.fecha_llegada
-    const tieneProblema = !v.foto_ticket_salida || !v.foto_tracto || sinLlegada || !v.operador || v.operador === '—'
-    if (!tieneProblema) return false
+  function toggleSort(col, isHist=false) {
+    if (isHist) {
+      if (hSortCol===col) setHSortDir(d=>d==='asc'?'desc':'asc')
+      else { setHSortCol(col); setHSortDir('asc') }
+    } else {
+      if (sortCol===col) setSortDir(d=>d==='asc'?'desc':'asc')
+      else { setSortCol(col); setSortDir('asc') }
+    }
+  }
+
+  const SortIcon = ({ col, isHist=false }) => {
+    const sc = isHist ? hSortCol : sortCol
+    const sd = isHist ? hSortDir : sortDir
+    return sc===col
+      ? <i className={`ti ti-arrow-${sd==='asc'?'up':'down'}`} style={{fontSize:10,marginLeft:3}}/>
+      : <i className="ti ti-arrows-sort" style={{fontSize:10,marginLeft:3,opacity:.3}}/>
+  }
+
+  function sortViajes(arr, col, dir) {
+    return [...arr].sort((a,b) => {
+      let va = a[col]||'', vb = b[col]||''
+      if (col==='m3') { va=vM3(a); vb=vM3(b) }
+      if (col==='cobro') { va=vCobro(a); vb=vCobro(b) }
+      if (typeof va==='number') return dir==='asc'?va-vb:vb-va
+      return dir==='asc'?String(va).localeCompare(String(vb)):String(vb).localeCompare(String(va))
+    })
+  }
+
+  // ── PENDIENTES DE CONCILIAR ──
+  const pendientesBase = viajes.filter(v => {
+    if (!['abierto','pendiente_conciliar'].includes(v.estado)) return false
+    if (fAgr && v.agremiado_id !== fAgr) return false
+    if (fDesde && (v.fecha_salida||'') < fDesde) return false
+    if (fHasta && (v.fecha_salida||'') > fHasta) return false
     if (searchQ) {
-      const sq = searchQ.toLowerCase()
-      if (!(v.id + v.tracto + v.operador + (v.gondola1||'')).toLowerCase().includes(sq)) return false
+      const q = searchQ.toLowerCase()
+      if (!`${v.id} ${v.tracto} ${v.operador||''} ${getNombre(v.agremiado_id)}`.toLowerCase().includes(q)) return false
     }
     return true
   })
+  const pendientes = sortViajes(pendientesBase, sortCol, sortDir)
 
-  // DASH 2: PENDIENTES
-  const pendConcil = viajes.filter(v => v.estado === 'pendiente_conciliar')
-  const pendPago   = viajes.filter(v => v.estado === 'pendiente_pago')
-  const tCobrar    = pendConcil.reduce((a, v) => a + vCobro(v), 0)
-  const tPagar     = pendPago.reduce((a, v) => a + vPago(v), 0)
+  // Identificar críticos: salieron hace más de 7 días y no conciliados
+  const diasSinConciliar = v => {
+    if (!v.fecha_salida) return 0
+    return Math.floor((new Date(today) - new Date(v.fecha_salida)) / 86400000)
+  }
+  const esCritico = v => diasSinConciliar(v) > 7
 
-  // DASH 3: HISTÓRICO
-  const totalCob  = viajes.reduce((a, v) => a + vCobro(v), 0)
-  const totalPag  = viajes.reduce((a, v) => a + vPago(v), 0)
+  // Contar por semanas previas (para badge)
+  const semanaAnterior = (() => {
+    const l = new Date(semana.inicio + 'T12:00:00'); l.setDate(l.getDate()-7)
+    return semanaDeDate(l.toISOString().slice(0,10))
+  })()
+  const criticos = pendientesBase.filter(esCritico)
+  const pendSemanaActual = pendientesBase.filter(v => v.fecha_salida >= semana.inicio && v.fecha_salida <= semana.fin)
+  const pendSemanaAnterior = pendientesBase.filter(v => v.fecha_salida >= semanaAnterior.inicio && v.fecha_salida <= semanaAnterior.fin)
+
+  // ── HISTÓRICO (solo conciliados/cerrados) ──
+  const historicosBase = viajes.filter(v => {
+    if (!['en_conciliacion','pendiente_pago','cerrado'].includes(v.estado)) return false
+    if (hAgr && v.agremiado_id !== hAgr) return false
+    if (hDesde && (v.fecha_salida||'') < hDesde) return false
+    if (hHasta && (v.fecha_salida||'') > hHasta) return false
+    if (searchQ) {
+      const q = searchQ.toLowerCase()
+      if (!`${v.id} ${v.tracto} ${v.operador||''} ${getNombre(v.agremiado_id)}`.toLowerCase().includes(q)) return false
+    }
+    return true
+  })
+  const historicos = sortViajes(historicosBase, hSortCol, hSortDir)
+
+  // ── GENERAL (todos) ──
+  const generalesBase = viajes.filter(v => {
+    if (hAgr && v.agremiado_id !== hAgr) return false
+    if (hDesde && (v.fecha_salida||'') < hDesde) return false
+    if (hHasta && (v.fecha_salida||'') > hHasta) return false
+    if (searchQ) {
+      const q = searchQ.toLowerCase()
+      if (!`${v.id} ${v.tracto} ${v.operador||''} ${getNombre(v.agremiado_id)}`.toLowerCase().includes(q)) return false
+    }
+    return true
+  })
+  const generales = sortViajes(generalesBase, hSortCol, hSortDir)
+
+  // KPIs generales
+  const totalCob  = generalesBase.reduce((a,v)=>a+vCobro(v),0)
+  const totalPag  = generalesBase.reduce((a,v)=>a+vPago(v),0)
   const totalUtil = totalCob - totalPag
-  const totalM3   = viajes.reduce((a, v) => a + vM3(v), 0)
+  const totalM3   = generalesBase.reduce((a,v)=>a+vM3(v),0)
+  const hoy = generalesBase.filter(v=>v.fecha_salida===today)
+  const entregasHoy = generalesBase.filter(v=>v.fecha_llegada===today)
+  const tiemposValidos = generalesBase.map(tiempoEntregaHoras).filter(t=>t!==null&&t<200)
+  const tiempoPromedio = tiemposValidos.length ? tiemposValidos.reduce((a,b)=>a+b,0)/tiemposValidos.length : 0
 
-  function toggleSelPago(id) {
-    const s = new Set(selPago)
-    s.has(id) ? s.delete(id) : s.add(id)
-    setSelPago(s)
+  // Excel pendientes
+  function exportarPendientes() {
+    const headers = ['Folio','Tracto','Tipo','Agremiado','Operador','M³','Fecha Sal.','Días sin conciliar','Estado','Crítico']
+    const data = pendientes.map(v => [
+      v.id, v.tracto, v.tipo, getNombre(v.agremiado_id), v.operador||'—',
+      vM3(v), v.fecha_salida||'', diasSinConciliar(v), v.estado, esCritico(v)?'SÍ':'NO'
+    ])
+    const csv = [headers,...data].map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(',')).join('\n')
+    const blob = new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'})
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a'); a.href=url; a.download=`pendientes-${today}.csv`; a.click()
+    URL.revokeObjectURL(url)
   }
 
-  function getProblemas(v) {
-    const p = []
-    if (!v.foto_ticket_salida) p.push('Sin T.Salida')
-    if (!v.foto_tracto) p.push('Sin foto tracto')
-    if (v.estado === 'abierto' && !v.fecha_llegada) p.push('Sin llegada')
-    if (!v.operador || v.operador === '—') p.push('Sin operador')
-    return p
-  }
+  const ThSort = ({ col, children, isHist=false }) => (
+    <th onClick={()=>toggleSort(col,isHist)} style={{cursor:'pointer',userSelect:'none',whiteSpace:'nowrap'}}>
+      {children}<SortIcon col={col} isHist={isHist}/>
+    </th>
+  )
 
-  // Años para histórico
-  const YEARS = [2026, 2025, 2024]
-  const [histYear, setHistYear] = useState(2026)
-  const estYear = estimaciones.filter(e => e.year === histYear)
+  const TablaViajes = ({ lista, showCobro=false, isHist=false }) => (
+    <div className="tw">
+      <table>
+        <thead><tr>
+          <ThSort col="id" isHist={isHist}>TICKET</ThSort>
+          <ThSort col="tracto" isHist={isHist}>TRACTO</ThSort>
+          <th>TIPO</th>
+          <ThSort col="agremiado_id" isHist={isHist}>AGREMIADO</ThSort>
+          <ThSort col="m3" isHist={isHist}>M³</ThSort>
+          <ThSort col="fecha_salida" isHist={isHist}>FECHA SAL.</ThSort>
+          <ThSort col="fecha_llegada" isHist={isHist}>LLEGADA</ThSort>
+          <th>TIEMPO</th>
+          {showCobro && p.canVerPrecios && <ThSort col="cobro" isHist={isHist}>COBRO</ThSort>}
+          <ThSort col="estado" isHist={isHist}>ESTADO</ThSort>
+        </tr></thead>
+        <tbody>
+          {lista.length ? lista.map(v => {
+            const horas = tiempoEntregaHoras(v)
+            const critico = esCritico(v)
+            return (
+              <tr key={v.id} className="tr" onClick={()=>setDetalleV(v)}
+                style={{background: critico&&tab==='pendientes'?'rgba(239,68,68,.05)':''}}>
+                <td>
+                  <span className="mono" style={{color:critico&&tab==='pendientes'?'var(--err)':'var(--acc)',fontWeight:700}}>{v.id}</span>
+                  {v.folio2&&<div className="mono" style={{fontSize:9,color:'var(--muted)'}}>{v.folio2}</div>}
+                  {critico&&tab==='pendientes'&&<div style={{fontSize:9,color:'var(--err)',fontWeight:700}}>⚠ {diasSinConciliar(v)}d</div>}
+                </td>
+                <td className="mono">{v.tracto}</td>
+                <td><Pill s={v.tipo}/></td>
+                <td style={{fontSize:10}}>{getNombre(v.agremiado_id)}</td>
+                <td className="mono">{vM3(v)}</td>
+                <td style={{fontSize:11}}>{v.fecha_salida||'—'}</td>
+                <td style={{fontSize:11,color:v.fecha_llegada?'var(--ok)':'var(--muted)'}}>{v.fecha_llegada||'—'}</td>
+                <td style={{fontSize:10,color:'var(--muted)',fontFamily:"'Space Mono',monospace"}}>
+                  {horas ? (horas<24?`${horas.toFixed(1)}h`:`${(horas/24).toFixed(1)}d`) : '—'}
+                </td>
+                {showCobro && p.canVerPrecios && <td className="mono" style={{color:'var(--cobro)'}}>{fmt(vCobro(v))}</td>}
+                <td><Pill s={v.estado}/></td>
+              </tr>
+            )
+          }) : (
+            <tr><td colSpan={10} style={{textAlign:'center',padding:20,color:'var(--muted)'}}>Sin resultados</td></tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  )
+
+  const FiltroBar = ({ agr, setAgr, desde, setDesde, hasta, setHasta, onExcel, showExcel=false }) => (
+    <div style={{display:'flex',gap:8,marginBottom:12,flexWrap:'wrap',alignItems:'center'}}>
+      <select value={agr} onChange={e=>setAgr(e.target.value)}
+        style={{height:28,fontSize:11,padding:'0 8px',background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:6,color:'var(--text)'}}>
+        <option value="">Todos los agremiados</option>
+        {agremiados?.filter(a=>a.activo!==false).map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}
+      </select>
+      <input type="date" value={desde} onChange={e=>setDesde(e.target.value)}
+        style={{height:28,fontSize:11,padding:'0 7px',background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:6,color:'var(--text)'}} title="Desde" />
+      <span style={{fontSize:11,color:'var(--muted)'}}>→</span>
+      <input type="date" value={hasta} onChange={e=>setHasta(e.target.value)}
+        style={{height:28,fontSize:11,padding:'0 7px',background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:6,color:'var(--text)'}} title="Hasta" />
+      {(agr||desde||hasta) && (
+        <button className="btn btn-out btn-xs" onClick={()=>{setAgr('');setDesde('');setHasta('')}}>
+          <i className="ti ti-x"/>Limpiar
+        </button>
+      )}
+      <div style={{flex:1}}/>
+      {showExcel && <button className="btn btn-out btn-sm" onClick={onExcel}><i className="ti ti-table-export"/>Excel</button>}
+    </div>
+  )
 
   return (
     <div>
       <div className="dtabs">
-        <button className={`dtab${tab==='atencion'?' active':''}`} onClick={() => setTab('atencion')}>
-          ⚠️ Requieren atención {conProblema.length > 0 && <span style={{ background: 'rgba(0,0,0,.2)', borderRadius: 10, padding: '1px 6px', marginLeft: 4, fontSize: 10 }}>{conProblema.length}</span>}
+        <button className={`dtab${tab==='pendientes'?' active':''}`} onClick={()=>setTab('pendientes')}>
+          ⏳ Pendientes de conciliar
+          {pendientesBase.length>0 && <span style={{background:'rgba(0,0,0,.2)',borderRadius:10,padding:'1px 6px',marginLeft:4,fontSize:10}}>{pendientesBase.length}</span>}
+          {criticos.length>0 && <span style={{background:'rgba(239,68,68,.7)',borderRadius:10,padding:'1px 6px',marginLeft:4,fontSize:10}}>⚠ {criticos.length}</span>}
         </button>
-        <button className={`dtab${tab==='pendientes'?' active':''}`} onClick={() => setTab('pendientes')}>
-          📋 Pendientes {(pendConcil.length + pendPago.length) > 0 && <span style={{ background: 'rgba(0,0,0,.2)', borderRadius: 10, padding: '1px 6px', marginLeft: 4, fontSize: 10 }}>{pendConcil.length + pendPago.length}</span>}
+        <button className={`dtab${tab==='historico'?' active':''}`} onClick={()=>setTab('historico')}>
+          📋 Histórico
+          <span style={{background:'rgba(0,0,0,.2)',borderRadius:10,padding:'1px 6px',marginLeft:4,fontSize:10}}>{historicosBase.length}</span>
         </button>
-        <button className={`dtab${tab==='historico'?' active':''}`} onClick={() => setTab('historico')}>📊 Histórico</button>
+        <button className={`dtab${tab==='general'?' active':''}`} onClick={()=>setTab('general')}>
+          📊 General
+        </button>
       </div>
 
-      {/* ── REQUIEREN ATENCIÓN ── */}
-      {tab === 'atencion' && (
-        <div>
-          <div className="kpis kpis-4">
-            <div className="kpi orn"><div className="kpi-l">Con problemas</div><div className="kpi-v" style={{ color: 'var(--err)' }}>{conProblema.length}</div><div className="kpi-s">Total viajes</div></div>
-            <div className="kpi"><div className="kpi-l">Sin foto tracto</div><div className="kpi-v" style={{ color: 'var(--err)' }}>{viajes.filter(v => !v.foto_tracto && v.estado !== 'cerrado').length}</div><div className="kpi-s">Pendiente</div></div>
-            <div className="kpi"><div className="kpi-l">Sin ticket salida</div><div className="kpi-v" style={{ color: 'var(--warn)' }}>{viajes.filter(v => !v.foto_ticket_salida && v.estado !== 'cerrado').length}</div><div className="kpi-s">Pendiente</div></div>
-            <div className="kpi"><div className="kpi-l">Sin llegada</div><div className="kpi-v" style={{ color: 'var(--warn)' }}>{viajes.filter(v => v.estado === 'abierto' && !v.fecha_llegada).length}</div><div className="kpi-s">Sin fecha llegada</div></div>
-          </div>
-          <div className="tc">
-            <div className="tc-h"><span className="tc-t">Viajes que requieren atención</span></div>
-            <div className="tw">
-              <table>
-                <thead><tr><th>TICKET ID</th><th>TIPO</th><th>TRACTO</th><th>M³</th><th>OPERADOR</th><th>FECHA SAL.</th><th>ESTADO</th><th>PROBLEMA</th><th>ACCIÓN</th></tr></thead>
-                <tbody>
-                  {conProblema.length ? conProblema.map(v => (
-                    <tr key={v.id} className="tr" onClick={() => setDetalleV(v)}>
-                      <td><span className="mono" style={{ color: 'var(--acc)' }}>{v.id}</span></td>
-                      <td><Pill s={v.tipo} /></td>
-                      <td>{v.tracto}</td>
-                      <td className="mono">{vM3(v)}</td>
-                      <td style={{ fontSize: 10 }}>{v.operador}</td>
-                      <td>{v.fecha_salida || '—'}</td>
-                      <td><Pill s={v.estado} /></td>
-                      <td>{getProblemas(v).map(p => <span key={p} className="pill pr" style={{ marginRight: 3, fontSize: 9 }}>{p}</span>)}</td>
-                      <td>
-                        {v.estado === 'abierto' && p.canLlegada && (
-                          <button className="btn btn-ok btn-xs" onClick={() => setLlegadaV(v)}>
-                            <i className="ti ti-circle-check" />Llegada
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  )) : (
-                    <tr><td colSpan={9} style={{ textAlign: 'center', padding: 20, color: 'var(--ok)' }}>✓ Sin viajes con problemas</td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* ── PENDIENTES ── */}
-      {tab === 'pendientes' && (
+      {tab==='pendientes' && (
         <div>
-          <div className="kpis kpis-4">
-            <div className="kpi grn"><div className="kpi-l">Por cobrar</div><div className="kpi-v">{fmt(tCobrar)}</div><div className="kpi-s">Pend. conciliar</div></div>
-            <div className="kpi acc"><div className="kpi-l">Tickets pend. conciliar</div><div className="kpi-v">{pendConcil.length}</div><div className="kpi-s">Listos</div></div>
-            <div className="kpi red"><div className="kpi-l">Por pagar camioneros</div><div className="kpi-v">{fmt(tPagar)}</div><div className="kpi-s">Sin liquidar</div></div>
-            <div className="kpi pur"><div className="kpi-l">Tickets pend. pago</div><div className="kpi-v">{pendPago.length}</div><div className="kpi-s">Camioneros</div></div>
+          {/* KPIs */}
+          <div className="kpis kpis-4" style={{marginBottom:12}}>
+            <div className="kpi acc">
+              <div className="kpi-l">Total pendientes</div>
+              <div className="kpi-v">{pendientesBase.length}</div>
+            </div>
+            <div className="kpi red">
+              <div className="kpi-l">⚠ Críticos (+7 días)</div>
+              <div className="kpi-v">{criticos.length}</div>
+            </div>
+            <div className="kpi" style={{border:'1px solid var(--border)'}}>
+              <div className="kpi-l">Esta semana ({semana.inicio})</div>
+              <div className="kpi-v" style={{color:'var(--info)'}}>{pendSemanaActual.length}</div>
+            </div>
+            <div className="kpi" style={{border:'1px solid var(--border)'}}>
+              <div className="kpi-l">Semana anterior</div>
+              <div className="kpi-v" style={{color:'var(--warn)'}}>{pendSemanaAnterior.length}</div>
+            </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            {/* PENDIENTES DE CONCILIAR */}
-            <div className="tc">
-              <div className="tc-h">
-                <span className="tc-t">Pendientes de conciliar</span>
-                {p.canConciliar && pendConcil.length > 0 && (
-                  <button className="btn btn-acc btn-sm" onClick={() => setShowConcil(true)}>
-                    <i className="ti ti-file-check" />Conciliar
-                  </button>
-                )}
-              </div>
-              <div className="tw">
-                <table>
-                  <thead><tr><th>TICKET</th><th>TRACTO</th><th>M³</th>{p.canVerPrecios && <th>COBRO</th>}<th>FECHA</th></tr></thead>
-                  <tbody>
-                    {pendConcil.length ? pendConcil.map(v => (
-                      <tr key={v.id} className="tr" onClick={() => setDetalleV(v)}>
-                        <td><span className="mono" style={{ color: 'var(--acc)' }}>{v.id}</span></td>
-                        <td>{v.tracto}</td>
-                        <td className="mono">{vM3(v)}</td>
-{p.canVerPrecios && <td className="mono" style={{ color: 'var(--cobro)' }}>{fmt(vCobro(v))}</td>}
-                        <td>{v.fecha_salida || '—'}</td>
-                      </tr>
-                    )) : (
-                      <tr><td colSpan={5} style={{ textAlign: 'center', padding: 16, color: 'var(--muted)' }}>Sin pendientes ✓</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+          {/* Filtros rápidos de semana */}
+          <div style={{display:'flex',gap:6,marginBottom:8,flexWrap:'wrap'}}>
+            <button className={`btn btn-xs ${!fDesde&&!fHasta?'btn-acc':'btn-out'}`} onClick={()=>{setFDesde('');setFHasta('')}}>Todos</button>
+            <button className={`btn btn-xs ${fDesde===semana.inicio&&fHasta===semana.fin?'btn-acc':'btn-out'}`}
+              onClick={()=>{setFDesde(semana.inicio);setFHasta(semana.fin)}}>Esta semana</button>
+            <button className={`btn btn-xs ${fDesde===semanaAnterior.inicio&&fHasta===semanaAnterior.fin?'btn-acc':'btn-out'}`}
+              onClick={()=>{setFDesde(semanaAnterior.inicio);setFHasta(semanaAnterior.fin)}}>Semana anterior</button>
+            <button className={`btn btn-xs ${fDesde===today&&fHasta===today?'btn-acc':'btn-out'}`}
+              onClick={()=>{setFDesde(today);setFHasta(today)}}>Hoy</button>
+            {criticos.length>0 && (
+              <button className="btn btn-xs btn-danger" onClick={()=>{setFDesde('');setFHasta('');setFAgr('')}}>
+                ⚠ Ver críticos ({criticos.length})
+              </button>
+            )}
+          </div>
 
-            {/* PENDIENTES DE PAGO */}
-            <div className="tc">
-              <div className="tc-h">
-                <span className="tc-t">Pendientes de pago</span>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  {selPago.size > 0 && p.canPagar && (
-                    <button className="btn btn-ok btn-sm" onClick={() => setPagoVs(pendPago.filter(v => selPago.has(v.id)))}>
-                      <i className="ti ti-cash" />Pagar ({selPago.size})
-                    </button>
-                  )}
-                  {pendPago.length > 0 && p.canPagar && (
-                    <button className="btn btn-acc btn-sm" onClick={() => setPagoVs(pendPago)}>
-                      <i className="ti ti-cash" />Pago masivo
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div className="tw">
-                <table>
-                  <thead><tr><th></th><th>TICKET</th><th>OPERADOR</th><th>M³</th><th>A PAGAR</th><th>FECHA</th></tr></thead>
-                  <tbody>
-                    {pendPago.length ? pendPago.map(v => (
-                      <tr key={v.id} className="tr" onClick={() => setDetalleV(v)}>
-                        <td><input type="checkbox" checked={selPago.has(v.id)} onChange={() => toggleSelPago(v.id)} style={{ accentColor: 'var(--acc)' }} /></td>
-                        <td><span className="mono" style={{ color: 'var(--acc)' }}>{v.id}</span></td>
-                        <td style={{ fontSize: 10 }}>{v.operador}</td>
-                        <td className="mono">{vM3(v)}</td>
-                        <td className="mono" style={{ color: 'var(--pago)' }}>{fmt(vPago(v))}</td>
-                        <td>{v.fecha_salida || '—'}</td>
-                      </tr>
-                    )) : (
-                      <tr><td colSpan={6} style={{ textAlign: 'center', padding: 16, color: 'var(--muted)' }}>Sin pendientes ✓</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+          <FiltroBar agr={fAgr} setAgr={setFAgr} desde={fDesde} setDesde={setFDesde}
+            hasta={fHasta} setHasta={setFHasta} onExcel={exportarPendientes} showExcel={true} />
+
+          {p.canConciliar && pendientesBase.length>0 && (
+            <div style={{marginBottom:10}}>
+              <button className="btn btn-acc btn-sm" onClick={()=>setShowConcil(true)}>
+                <i className="ti ti-file-check"/>Conciliar seleccionados
+              </button>
             </div>
+          )}
+
+          <div className="tc">
+            <div className="tc-h">
+              <span className="tc-t">
+                {pendientes.length} viaje{pendientes.length!==1?'s':''} pendiente{pendientes.length!==1?'s':''}
+                {criticos.filter(v=>{
+                  if(fAgr&&v.agremiado_id!==fAgr) return false
+                  if(fDesde&&v.fecha_salida<fDesde) return false
+                  if(fHasta&&v.fecha_salida>fHasta) return false
+                  return true
+                }).length>0 && <span style={{color:'var(--err)',marginLeft:8,fontSize:11}}>⚠ incluye críticos</span>}
+              </span>
+            </div>
+            <TablaViajes lista={pendientes} showCobro={true} />
           </div>
         </div>
       )}
 
       {/* ── HISTÓRICO ── */}
-      {tab === 'historico' && (
+      {tab==='historico' && (
         <div>
-          <div className="kpis kpis-4">
-            <div className="kpi acc"><div className="kpi-l">Total viajes</div><div className="kpi-v">{viajes.length}</div><div className="kpi-s">{totalM3.toFixed(0)} m³</div></div>
-            <div className="kpi grn"><div className="kpi-l">Cobros totales</div><div className="kpi-v">{fmt(totalCob)}</div><div className="kpi-s">Todos los viajes</div></div>
-            <div className="kpi red"><div className="kpi-l">Pagos totales</div><div className="kpi-v">{fmt(totalPag)}</div><div className="kpi-s">Camioneros</div></div>
-            <div className="kpi pur"><div className="kpi-l">Utilidad total</div><div className="kpi-v">{fmt(totalUtil)}</div><div className="kpi-s">Cobro − Pago</div></div>
+          <div className="kpis kpis-4" style={{marginBottom:12}}>
+            <div className="kpi acc"><div className="kpi-l">Viajes conciliados</div><div className="kpi-v">{historicosBase.length}</div></div>
+            {p.canVerPrecios && <>
+              <div className="kpi grn"><div className="kpi-l">Cobro total</div><div className="kpi-v" style={{fontSize:14}}>{fmt(historicosBase.reduce((a,v)=>a+vCobro(v),0))}</div></div>
+              <div className="kpi red"><div className="kpi-l">Pago total</div><div className="kpi-v" style={{fontSize:14}}>{fmt(historicosBase.reduce((a,v)=>a+vPago(v),0))}</div></div>
+              <div className="kpi pur"><div className="kpi-l">Utilidad CATEM</div><div className="kpi-v" style={{fontSize:14}}>{fmt(historicosBase.reduce((a,v)=>a+vCobro(v)-vPago(v),0))}</div></div>
+            </>}
           </div>
-          <div className="split">
-            <div className="spi"><div className="spl">CATEM (50%)</div><div className="spv">{fmt(totalUtil/2)}</div></div>
-            <div className="spi" style={{ borderLeft: '1px solid var(--border)' }}><div className="spl">Julios Sánchez Vargas (50%)</div><div className="spv">{fmt(totalUtil/2)}</div></div>
-          </div>
-          {/* Por año */}
-          <div style={{ display: 'flex', gap: 5, marginBottom: 12, flexWrap: 'wrap' }}>
-            {YEARS.map(y => (
-              <button key={y} className={`ychip${histYear===y?' active':''}`} onClick={() => setHistYear(y)}>{y}</button>
-            ))}
-          </div>
-          <div className="est-grid">
-            {estYear.map(e => {
-              const vs = viajes.filter(v => v.estimacion_id === e.id)
-              const m3 = vs.reduce((a, v) => a + vM3(v), 0)
-              const cob = vs.reduce((a, v) => a + vCobro(v), 0)
-              const pag = vs.reduce((a, v) => a + vPago(v), 0)
-              return (
-                <div key={e.id} className={`ec ${e.estado}`}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                    <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 13, fontWeight: 700 }}>{e.id}</div>
-                    <Pill s={e.estado} />
-                  </div>
-                  <div style={{ fontSize: 28, fontWeight: 700, lineHeight: 1 }}>{vs.length}</div>
-                  <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2, marginBottom: 6 }}>{m3.toFixed(2)} m³</div>
-                  <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 14, fontWeight: 700, color: 'var(--cobro)' }}>{fmt(cob)}</div>
-                  <div style={{ fontSize: 11, color: 'var(--util)', marginTop: 2 }}>Util: {fmt(cob-pag)}</div>
-                </div>
-              )
-            })}
-            {!estYear.length && <div className="empty" style={{ gridColumn: '1/-1' }}><i className="ti ti-file-invoice" /><p>Sin estimaciones para {histYear}</p></div>}
+          <FiltroBar agr={hAgr} setAgr={setHAgr} desde={hDesde} setDesde={setHDesde} hasta={hHasta} setHasta={setHHasta} />
+          <div className="tc">
+            <div className="tc-h"><span className="tc-t">{historicos.length} viajes conciliados</span></div>
+            <TablaViajes lista={historicos} showCobro={true} isHist={true} />
           </div>
         </div>
       )}
 
-      {/* MODALES */}
-      {detalleV && <ModalDetalleViaje viaje={detalleV} onClose={() => setDetalleV(null)} onReabrir={id => { reabrirViaje(id); setDetalleV(null) }} />}
-      {llegadaV && <ModalLlegada viaje={llegadaV} onClose={() => setLlegadaV(null)} onSaved={() => setLlegadaV(null)} />}
-      {pagoVs && <ModalPago viajes={pagoVs} onClose={() => { setPagoVs(null); setSelPago(new Set()) }} onSaved={() => { setPagoVs(null); setSelPago(new Set()) }} />}
-      {showConcil && <ModalConciliacion onClose={() => setShowConcil(false)} onSaved={() => setShowConcil(false)} />}
+      {/* ── GENERAL ── */}
+      {tab==='general' && (
+        <div>
+          <div className="kpis kpis-4" style={{marginBottom:12}}>
+            <div className="kpi acc"><div className="kpi-l">Total viajes</div><div className="kpi-v">{generalesBase.length}</div></div>
+            <div className="kpi"><div className="kpi-l">Salidas hoy</div><div className="kpi-v" style={{color:'var(--info)'}}>{hoy.length}</div></div>
+            <div className="kpi"><div className="kpi-l">Entregas hoy</div><div className="kpi-v" style={{color:'var(--ok)'}}>{entregasHoy.length}</div></div>
+            <div className="kpi"><div className="kpi-l">M³ total</div><div className="kpi-v" style={{color:'var(--info)',fontSize:14}}>{totalM3.toFixed(1)}</div></div>
+            {p.canVerPrecios && <>
+              <div className="kpi grn"><div className="kpi-l">Cobro total</div><div className="kpi-v" style={{fontSize:13}}>{fmt(totalCob)}</div></div>
+              <div className="kpi red"><div className="kpi-l">Pago total</div><div className="kpi-v" style={{fontSize:13}}>{fmt(totalPag)}</div></div>
+              <div className="kpi pur"><div className="kpi-l">Utilidad CATEM</div><div className="kpi-v" style={{fontSize:13}}>{fmt(totalUtil)}</div></div>
+            </>}
+            <div className="kpi"><div className="kpi-l">Tiempo prom. entrega</div><div className="kpi-v" style={{color:'var(--muted)',fontSize:14}}>{tiempoPromedio>0?(tiempoPromedio<24?`${tiempoPromedio.toFixed(1)}h`:`${(tiempoPromedio/24).toFixed(1)}d`):'—'}</div></div>
+          </div>
+          <FiltroBar agr={hAgr} setAgr={setHAgr} desde={hDesde} setDesde={setHDesde} hasta={hHasta} setHasta={setHHasta} />
+          <div className="tc">
+            <div className="tc-h"><span className="tc-t">{generales.length} viajes</span></div>
+            <TablaViajes lista={generales} showCobro={true} isHist={true} />
+          </div>
+        </div>
+      )}
+
+      {detalleV && <ModalDetalleViaje viaje={detalleV} onClose={()=>setDetalleV(null)} onReabrir={id=>{reabrirViaje(id);setDetalleV(null)}}/>}
+      {llegadaV && <ModalLlegada viaje={llegadaV} onClose={()=>setLlegadaV(null)} onSaved={()=>setLlegadaV(null)}/>}
+      {showConcil && <ModalConciliacion viajes={pendientesBase} onClose={()=>setShowConcil(false)}/>}
     </div>
   )
 }
